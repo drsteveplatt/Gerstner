@@ -82,7 +82,7 @@ void loop() {
       for(c=0; c<GRIDSIZE; c++) {
         s = r;
         v = ((r&0x01)==0) ? c : GRIDSIZE-c-1;
-        theLeds[r][c] =  CHSV(h,v*16,s*16);
+        theLeds[r][c] =  CHSV(h,v*16,dim8_video(s*16));
         //Serial << r << ' ' << c << ' ' << h << ' ' << s*16 << ' ' << v*16 << endl;
       }
       FastLED.show();
