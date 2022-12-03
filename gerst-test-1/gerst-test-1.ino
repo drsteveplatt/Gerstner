@@ -11,82 +11,53 @@
 #include <Streaming.h>
 #include <FastLED.h>
 #include "gerstner.h"
+#include "gridlib.h"
 #include "gerst-test-1.h"
+
+Grid grid(GRIDSIZE, GRIDSIZE);
+
+#define  WCS_LLX 0
+#define WCS_LLY 0
+#define WCS_URX 10000
+#define WCS_URY 10000
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   delay(200); // allow Serial to come online
-  Serial << "Gerstner test 2 starting\n";
+  Serial << "Gerstner test 3 starting\n";
+
+  // Initialize the grid
+  grid.setWCS(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
+
+  {
+    int c,r;
+    gridwcs_t x,y;
+  }
 
   // Initialize the LEDs
-  FastLED.addLeds<WS2811, 25, GRB>(&theLeds[0][0], GRIDSIZE*GRIDSIZE);
+  //FastLED.addLeds<WS2811, 25, GRB>(&theLeds[0][0], GRIDSIZE*GRIDSIZE);
+  FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDSIZE*GRIDSIZE);
 
-
-    int h,s,v;
-  int r,c,ct;
- /*
-  for(int i=0; i<GRIDSIZE*GRIDSIZE; i++) {
-    r = i/16;
-    c = ((r&01)==0) ? i%16 : 16-1-(i%16);
-    //c = i%16;
-    Serial << r << ' ' << c << ' ' << i%256 << endl;
-    //theLeds[r][c] = CRGB( i%256, 0, 0);
-    theLeds[r][c] = CHSV(i%256,255,255);
-    //theLeds[i/16][i%16] = CRGB( i%256, 0, 0);
-  }
-  FastLED.show();
-  delay(1000);
-  */
-
-  /*
-  int h,s,v;
-  int r,c,ct;
-  for(h=0; h<1; h++) {
-    for(r=0; r<GRIDSIZE; r++)
-      for(c=0; c<GRIDSIZE; c++) {
-        ct = (r&0x01)==0 ? c : GRIDSIZE-c;
-        s = r*GRIDSIZE;
-        v = c*GRIDSIZE;
-        Serial << r << ' ' << c << " -> " << h << ' ' << s << ' ' << v << endl;
-        theLeds[c][r] = CHSV(h,s,ct);
-      }
-    FastLED.show();
-    delay(20);
-  }
-  */
-  // Initialize the wave space
-  for(int r=0; r<LOGICALGRIDSIZE; r++) {
-    for(int c=0; c<LOGICALGRIDSIZE; c++) {
-      cells[r][c].setWcsFromDcs(r,c);
-    }
-  }
-  // quick verify
-//  for(int r=0; r<2; r++) {
-//    Serial.printf("%2d: ",r);
-//    for(int c=0; c<LOGICALGRIDSIZE; c++) Serial.printf("[%5.3f, %5.3f]", cells[r][c].px, cells[r][c].py);
-//    Serial.println();
-//  }
-//    for(int r=LOGICALGRIDSIZE-2; r<LOGICALGRIDSIZE; r++) {
-//    Serial.printf("%2d: ",r);
-//    for(int c=0; c<LOGICALGRIDSIZE; c++) Serial.printf("[%5.3f, %5.3f]", cells[r][c].px, cells[r][c].py);
-//    Serial.println();
-//  }
 }
 
 void loop() {
-  int r,c;
+  int32_t r,c;
   int h,s,v;
-  for(h=0; h<GRIDSIZE*GRIDSIZE; h++) {
-    for(r=0; r<GRIDSIZE; r++) 
+  int x, y;
+  for(h=0; h<256; h++) {
+    for(r=0; r<GRIDSIZE; r++) {
       for(c=0; c<GRIDSIZE; c++) {
-        s = r;
-        v = ((r&0x01)==0) ? c : GRIDSIZE-c-1;
-        theLeds[r][c] =  CHSV(h,v*16,dim8_video(s*16));
-        //Serial << r << ' ' << c << ' ' << h << ' ' << s*16 << ' ' << v*16 << endl;
+        s = r*16;
+        v = dim8_video(c*16);
+        //grid.crToWcs(c,r,x,y);
+        //grid.setPixel(x,y, CHSV(h, s, v));
+        grid.setPixelCr(c,r, CHSV(h, s, v));
+        //Serial << r << ' ' << c << ' -> ' << h << ' ' << s << ' ' << v << endl;
       }
-      FastLED.show();
-      delay(20);
+    }
+    FastLED.show();
+    delay(20);
   }
   // recompute wave
   // display it
