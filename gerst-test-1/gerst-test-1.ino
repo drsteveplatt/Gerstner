@@ -42,6 +42,7 @@ void setup() {
 }
 
 void loop() {
+
   int32_t r,c;
   int h,s,v;
   int x, y;
@@ -59,6 +60,5 @@ void loop() {
     FastLED.show();
     delay(20);
   }
-  // recompute wave
-  // display it
+
 }
