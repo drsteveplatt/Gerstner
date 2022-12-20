@@ -1,5 +1,5 @@
 //
-// Gerstner test 2
+// Gerstner full test 1
 // Simple waves on a grid
 
 // ESP32 fast sin/cos notes:
@@ -9,46 +9,69 @@
 #define __MAIN__
 #include <Streaming.h>
 #include <FastLED.h>
-#include "gerstner.h"
 #include "gridlib.h"
-#include "gerst-test-2.h"
+#include "gerstner.h"
+//#include "gerst-test-2.h"
 #include "gamma.h"
 
-Grid grid(GRIDCOLS, GRIDROWS);
+#define GRIDCOLS 16
+#define GRIDROWS 16
 
-#define  WCS_LLX 0
+Grid grid(GRIDCOLS, GRIDROWS);
+Grid16 accum;
+
+GerstWave gerst;
+
+#define WCS_LLX 0
 #define WCS_LLY 0
 #define WCS_URX (65535*2)
 #define WCS_URY (65535*2)
 
+#define PI 3.1415926
+int32_t angleMap(float angle) {
+  // maps angle (0 2pi) to (0 65535)
+  return (int32_t)((angle*65535)/(2*PI));
+}
+
 void setup() {
   Serial.begin(115200);
   delay(200); // allow Serial to come online
-  Serial << "Gerstner test 2.1 starting\n";
+  Serial << "Gerstner full test 1 starting\n";
+  Serial << "long int size: " << sizeof(long int) << endl;
 
-  // Initialize the grid
+  // Initialize the display grid
   grid.setWCS(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
-  FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
+  // Initialize the accumulator grid
+  accum.init(GRIDCOLS, GRIDROWS);
 
-  CHSV tmp;
-  tmp = CHSV(255,253, 251);
-  Serial << tmp[0] << ' ' << tmp[1] << ' ' << tmp[2] << endl;
+  // First test is a single wave
+  gerst.init(&grid, &accum);
+  gerst.start(0, 32767, 65536, 10000, angleMap(PI/6));
+//            duration maxAmpl wavelength velocity angle
+  
+  FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
 
 }
 
 #define DO_TEST_1 false
 #define DO_TEST_2 false
 #define DO_TEST_3 false
-#define DO_TEST_4 true
+#define DO_TEST_4 false
+#define DO_TEST_5 true
 void loop() {
   #if DO_TEST_1
   // test 1: paint a wave on x, and repeat the same wave along y
   Serial << "Subtest 1.  Paint the screen.\n";
   for(int r=0; r<GRIDROWS; r++) {
     for(int c=0; c<GRIDCOLS; c++) {
+      // map rc to uv
       gridwcs_t x, y;
-      int red, green, blue;
+      gridwcs_t u, v;
       grid.crToWcs(c,r, x, y);
+      u = x;
+      v = y;
+     
+      int red, green, blue;
       red = map(c,0,GRIDCOLS,0,255);
       green = map(r,0,GRIDROWS, 0, 255);
       blue = 0;
@@ -114,7 +137,7 @@ void loop() {
   // paint a simple wave using trig, ability to scale theta
 #define H_LOW ((161*256)/360)
 #define S_LOW 255
-#define V_LOW ((30*256)/100)
+#define V_LOW ((20*256)/100)
 #define H_HIGH H_LOW
 //#define S_HIGH ((55*256)/100)
 #define S_HIGH 186
@@ -191,4 +214,24 @@ void loop() {
   delay(20);
   #endif // DO_TEST_4
 
+  #if DO_TEST_5
+
+  // testing actual gerstwave
+  static bool hasRun = false;
+  if(!hasRun) {
+    
+    accum.clear();
+    gerst.calc();
+    for(int r=0; r<GRIDROWS; r++) {
+      for(int c=0; c<GRIDCOLS; c++) {
+        CRGB16 val(accum.get(c,r));
+        grid.setPixelCr(c,r,val.r, val.g, val.b);
+      }
+    }
+    FastLED.show();
+    delay(100);
+    
+    //hasRun = true;
+  }
+  #endif // DO_TEST_5
 }
