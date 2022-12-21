@@ -18,15 +18,25 @@
 #define GRIDROWS 16
 
 Grid grid(GRIDCOLS, GRIDROWS);
-Grid16 accum;
+GridHeight accum;
 
 GridWorld gerstWorld(GRIDCOLS, GRIDROWS);
 GerstWave gerst;
+GerstWave gerst2;
 
 #define WCS_LLX 0
 #define WCS_LLY 0
 #define WCS_URX (65535*2)
 #define WCS_URY (65535*2)
+
+#define H_LOW ((161*256)/360)
+#define S_LOW 255
+// V_LOW was ((30*256)/100)
+#define V_LOW ((40*256)/100)
+#define H_HIGH H_LOW
+//#define S_HIGH ((55*256)/100)
+#define S_HIGH 186
+#define V_HIGH ((63*256)/100)
 
 #define PI 3.1415926
 int32_t angleMap(float angle) {
@@ -47,6 +57,9 @@ void setup() {
   // First test is a single wave
   gerst.init(&gerstWorld, &accum);
   gerst.start(0, 32767, 65536, 10000, angleMap(PI/6));
+
+  gerst2.init(&gerstWorld, &accum);
+  gerst2.start(0, 16384, 16384, 20000, angleMap(PI/2));
 //            duration maxAmpl wavelength velocity angle
   
   FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
@@ -64,11 +77,19 @@ void loop() {
   if(!hasRun) {
     
     accum.clear();
-    gerst.calc();
+    //gerst.calc();
+    gerst2.calc();
     for(int r=0; r<GRIDROWS; r++) {
       for(int c=0; c<GRIDCOLS; c++) {
-        CRGB16 val(accum.get(c,r));
-        grid.setPixel(c,r,val.r, val.g, val.b);
+        CHSV hsv;
+        gridwcs_t height;
+        //CRGB16 val(accum.get(c,r));
+        height = accum.get(r,c);
+        if(height>32767) height=32767;
+        if(height<-32767) height=-32767;
+        hsv = CHSV(H_LOW,map(accum.get(c,r), -32767, 32767, S_LOW,S_HIGH), gamma8(map(accum.get(c,r), -32767, 32767, V_LOW,V_HIGH)));
+        grid.setPixel(c,r, CRGB(hsv));
+        //grid.setPixel(c,r,val.r, val.g, val.b);
       }
     }
     FastLED.show();

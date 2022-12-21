@@ -10,14 +10,7 @@
 
 #include <Streaming.h>
 
-#define H_LOW ((161*256)/360)
-#define S_LOW 255
-// V_LOW was ((30*256)/100)
-#define V_LOW ((40*256)/100)
-#define H_HIGH H_LOW
-//#define S_HIGH ((55*256)/100)
-#define S_HIGH 186
-#define V_HIGH ((63*256)/100)
+
 
 static gridwcs_t trigMult(gridwcs_t val, int16_t cs) {
   // multiplies a wcs val by the result of a FastLED 16-bit cos/sin val
@@ -80,10 +73,13 @@ void GerstWave::calc() {
       // calculate our new color
       theta = u /*map(c, 0,GRIDCOLS, 0,65535)*2 + phaseShiftX*/;
       while(theta>65535) theta -= 65536;
+      m_acc->get(c,r) += height;
       height = cos16(theta);
+      #if false
       hsv = CHSV(H_LOW,map(height, -32767, 32767, S_LOW,S_HIGH), gamma8(map(height, -32767, 32767, V_LOW,V_HIGH)));
       // add it to the accumulator
       m_acc->get(c,r) += CRGB(hsv);
+      #endif
      // if(r==0 & c==0) Serial << "cr: " << c << ' ' << r  << " xy: " << x << ' ' << y 
      //      << " uv: " << u << ' ' << v << " du dt th hsv: " << du << ' ' << dt << ' ' << theta << ' ' <<  hsv.h << ' ' << hsv.s << ' ' << hsv.v << endl;
     }

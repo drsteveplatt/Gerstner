@@ -31,31 +31,24 @@ class CRGB16 {
 };
 
 // Grid of 16-but accumulators for RGB values
-class Grid16 {
+class GridHeight {
   private:
-    CRGB16* m_cells;
+    gridwcs_t* m_cells;
   public:
     uint16_t m_nRows, m_nCols;
   public:
-    Grid16() { m_cells=NULL; }
-    ~Grid16() { if(m_cells!=NULL) delete[] m_cells; }
+    GridHeight() { m_cells=NULL; }
+    ~GridHeight() { if(m_cells!=NULL) delete[] m_cells; }
     void init(uint16_t nCols, uint16_t nRows) {
       if(m_cells!=NULL) delete[] m_cells; 
-      m_cells = new CRGB16[nCols*nRows];
+      m_cells = new gridwcs_t[nCols*nRows];
       m_nRows = nRows;
       m_nCols = nCols;
     }
-    void set(int c,int r, CRGB16 val) { m_cells[r*m_nRows+c] = val; }
-    CRGB16& get(int c, int r) { return m_cells[r*m_nRows+c]; }
+    void set(int c,int r, gridwcs_t val) { m_cells[r*m_nRows+c] = val; }
+    gridwcs_t& get(int c, int r) { return m_cells[r*m_nRows+c]; }
     void clear() {
-      memset(m_cells, 0, m_nRows*m_nCols*sizeof(CRGB16));
-      #if false
-      for(int r=0; r<m_nRows; r++) {
-        for(int c=0; c<m_nCols; c++) {
-          m_cells[r*m_nCols + c] = CRGB16(0,0,0);
-        }
-      }
-      #endif
+      memset(m_cells, 0, m_nRows*m_nCols*sizeof(gridwcs_t));
     }
     uint16_t rows() { return m_nRows; }
     uint16_t cols() { return m_nCols; }
@@ -74,12 +67,12 @@ class GerstWave {
     uint16_t m_nRows, m_nCols;
     // Note that m_grid and m_acc are both passed in via init()
     GridWorld* m_world;                           // used to get grid mappings
-    Grid16* m_acc;
+    GridHeight* m_acc;
   public:
     GerstWave(): m_world(NULL), m_acc(NULL),
       m_nRows(0), m_nCols(0), m_startTime(0), m_duration(0) {  };
     ~GerstWave() { delete[] m_acc; };
-    void init(GridWorld* world, Grid16* acc) {
+    void init(GridWorld* world, GridHeight* acc) {
       m_world = world;
       m_acc = acc;
       m_nRows = m_acc->rows();
