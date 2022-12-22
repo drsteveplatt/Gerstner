@@ -23,22 +23,33 @@ GridHeight accum;
 GridWorld gerstWorld(GRIDCOLS, GRIDROWS);
 GerstWave gerst;
 GerstWave gerst2;
+GerstWave gerst3;
 
+// LL/UL XY define the display space
 #define WCS_LLX 0
 #define WCS_LLY 0
 #define WCS_URX (999)
 #define WCS_URY (999)
-#define WCS_ZMIN 
-#define WCS_ZMAX 
 
+// ZMIN/ZMAX define the range for chromatic interpolation
+#define WCS_ZMIN   -100
+#define WCS_ZMAX   50
+
+// HSV value  for wave heights below zero.  Interpolated [LOW ZERO] for height=[ZMIN 0]
+// and [ZERO HIGH] for height=(0, ZMAX]
 #define H_LOW ((161*256)/360)
 #define S_LOW 255
 // V_LOW was ((30*256)/100)
 #define V_LOW ((40*256)/100)
+
+#define H_ZERO H_LOW
+#define S_ZERO 240
+#define V_ZERO ((45*256)/100)
+
 #define H_HIGH H_LOW
 //#define S_HIGH ((55*256)/100)
-#define S_HIGH 186
-#define V_HIGH ((63*256)/100)
+#define S_HIGH 220
+#define V_HIGH ((53*256)/100)
 
 #define PI 3.1415926
 int32_t angleMap(float angle) {
@@ -62,6 +73,9 @@ void setup() {
 
   gerst2.init(&gerstWorld, &accum);
   gerst2.start(0, 50, 250, 200, angleMap(PI/2));
+
+  gerst3.init(&gerstWorld, &accum);
+  gerst3.start(0, 25, 200, -100, angleMap(PI/3));
 //            duration maxAmpl wavelength velocity angle
   
   FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
@@ -76,6 +90,7 @@ void loop() {
     accum.clear();
     gerst.calc();
     gerst2.calc();
+    gerst3.calc();
     for(int r=0; r<GRIDROWS; r++) {
       for(int c=0; c<GRIDCOLS; c++) {
         CHSV hsv;
@@ -83,9 +98,13 @@ void loop() {
         gridwcs_t height;
         //CRGB16 val(accum.get(c,r));
         height = accum.get(c,r);
-        if(height>32767) height=32767;
-        if(height<-32767) height=-32767;
-        hsv = CHSV(H_LOW,map(height, -32767, 32767, S_LOW,S_HIGH), gamma8(map(height, -32767, 32767, V_LOW,V_HIGH)));
+        if(height<WCS_ZMIN) height=WCS_ZMIN;
+        if(height>WCS_ZMAX) height=WCS_ZMAX;
+        if(height<=0) {
+          hsv = CHSV(H_LOW,map(height, WCS_ZMIN, 0, S_LOW,S_ZERO), gamma8(map(height, WCS_ZMIN, 0, V_LOW,V_ZERO)));
+        } else {
+          hsv = CHSV(H_LOW,map(height, 0, WCS_ZMAX, S_ZERO,S_HIGH), gamma8(map(height, 0, WCS_ZMAX, V_ZERO,V_HIGH)));          
+        }
         rgb = CRGB(hsv);
         grid.setPixel(c,r, rgb);
 #define DEBUG false
