@@ -71,17 +71,24 @@ void GerstWave::calc() {
       du = (m_velocity*dt)/1000;
       u -= du;
       // calculate our new color
-      theta = u /*map(c, 0,GRIDCOLS, 0,65535)*2 + phaseShiftX*/;
-      while(theta>65535) theta -= 65536;
-      m_acc->get(c,r) += height;
+      //theta = u /*map(c, 0,GRIDCOLS, 0,65535)*2 + phaseShiftX*/;
+      //while(theta>m_wavelength) theta -= m_wavelength;
+      theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
       height = cos16(theta);
+      m_acc->get(c,r) += height;
       #if false
       hsv = CHSV(H_LOW,map(height, -32767, 32767, S_LOW,S_HIGH), gamma8(map(height, -32767, 32767, V_LOW,V_HIGH)));
       // add it to the accumulator
       m_acc->get(c,r) += CRGB(hsv);
       #endif
-     // if(r==0 & c==0) Serial << "cr: " << c << ' ' << r  << " xy: " << x << ' ' << y 
-     //      << " uv: " << u << ' ' << v << " du dt th hsv: " << du << ' ' << dt << ' ' << theta << ' ' <<  hsv.h << ' ' << hsv.s << ' ' << hsv.v << endl;
+#define DEBUG false
+#if DEBUG
+      if(r==0) {
+        Serial << "cr: " << c << ' ' << r  << " xy: " << x << ' ' << y 
+           << " uv: " << u << ' ' << v << " du dt th  cs sn height: " << du << ' ' << dt << ' ' << theta << ' ' <<  cs << ' ' << sn << ' ' << height << endl;
+        //Serial << "    num(unsh), num, denom: " << ((u%m_wavelength)-m_world->m_wcsLLx) << ' ' <<  (((u%m_wavelength)-m_world->m_wcsLLx)<<16) << ' ' << m_wavelength << endl;
+      }
+#endif
     }
   }
 

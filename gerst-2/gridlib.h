@@ -22,6 +22,7 @@ typedef int32_t gridwcs_t;
 class GridWorld {
   private:
     int m_nRows,  m_nCols;     // physical cr limits [ [0 m_nCols-1] [0 m_nRows-1] ]
+  public:
     gridwcs_t m_wcsLLx, m_wcsLLy, m_wcsURx, m_wcsURy;
     gridwcs_t m_wcsRangex, m_wcsRangey;
     gridwcs_t m_wcsStepx, m_wcsStepy;
@@ -32,6 +33,8 @@ class GridWorld {
     void setWcs(int wcsLLx, int wcsLLy, int wcsURx, int wcsURy) {
       m_wcsLLx = wcsLLx; m_wcsLLy = wcsLLy;
       m_wcsURx = wcsURx; m_wcsURy = wcsURy;
+      m_wcsRangex = m_wcsURx - m_wcsLLx;
+      m_wcsRangey = m_wcsURy - m_wcsLLy;
     }
     int wcsToPixId(gridwcs_t wcsX, gridwcs_t wcsY) {
       int r,c;

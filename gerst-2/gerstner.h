@@ -45,8 +45,8 @@ class GridHeight {
       m_nRows = nRows;
       m_nCols = nCols;
     }
-    void set(int c,int r, gridwcs_t val) { m_cells[r*m_nRows+c] = val; }
-    gridwcs_t& get(int c, int r) { return m_cells[r*m_nRows+c]; }
+    void set(int c,int r, gridwcs_t val) { m_cells[r*m_nCols+c] = val; }
+    gridwcs_t& get(int c, int r) { return m_cells[r*m_nCols+c]; }
     void clear() {
       memset(m_cells, 0, m_nRows*m_nCols*sizeof(gridwcs_t));
     }
