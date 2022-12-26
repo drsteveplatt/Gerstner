@@ -53,8 +53,6 @@ void GerstWave::calc() {
     m_wavelength = random(m_rngMinWavelength, m_rngMaxWavelength);
     m_velocity = random(m_rngMinVelocity, m_rngMaxVelocity);
     m_angle = random(m_rngMinAngle, m_rngMaxAngle);
-    Serial << "Calc: wave regen dur: " << m_duration << " ampl: " << m_maxAmplitude
-      << " wavelength: " << m_wavelength << " vel: " << m_velocity << " angle: " << m_angle << endl;
     // and rest the time
     m_startTime = tNow;
   }

@@ -72,10 +72,10 @@ void setup() {
 //            duration maxAmpl wavelength velocity angle
   gerst.init(&gerstWorld, &accum);
 //            duration maxAmpl wavelength velocity angle
-    gerst.start(5000, 900, 1000, 100, angleMap(PI/6));
+    gerst.start(5000, 900, 1500, 100, angleMap(PI/6));
     gerst.setRangeDuration(5000, 15000);
     gerst.setRangeAmplitude(800, 1000);
-    gerst.setRangeWavelength(750, 2000);
+    gerst.setRangeWavelength(800, 1500);
     gerst.setRangeVelocity(-200, 200);
     gerst.setRangeAngle(0, angleMap(PI/4));
 
@@ -113,8 +113,16 @@ void setup() {
 void loop() {
   // testing actual gerstwave
   static bool hasRun = false;
+  static uint32_t frameCount = 0;
+  static uint32_t frameStartTime = 0;
+  static const uint32_t maxFrameCount = 100;
   if(!hasRun) {
-  
+
+    if(frameCount>maxFrameCount && millis()>frameStartTime) {
+      Serial << "Perf: " << (frameCount*1000)/(millis()-frameStartTime) << " frames/sec\n";
+      frameStartTime = millis();
+      frameCount = 0;
+    } else frameCount++;
     accum.clear();
     gerst.calc();
     gerst2.calc();
@@ -125,11 +133,7 @@ void loop() {
         CHSV hsv;
         CRGB rgb;
         gridwcs_t height;
-        //CRGB16 val(accum.get(c,r));
         height = accum.get(c,r);
-        //height += 200;
-       // if(height<WCS_ZMIN) height=WCS_ZMIN;
-      //  if(height>WCS_ZMAX) height=WCS_ZMAX;
         if(height<=0) {
           hsv = CHSV(H_LOW,map(height, -GW_MAX_AMPLITUDE, 0, S_LOW,S_ZERO), gamma8(map(height, GW_MAX_AMPLITUDE, 0, V_LOW,V_ZERO)));
         } else {
@@ -137,20 +141,9 @@ void loop() {
         }
         rgb = CRGB(hsv);
         grid.setPixel(c,r, rgb);
-#define DEBUG false
-#if DEBUG
-        if(r==0) {
-          Serial << "loop: [" << height << ": " << hsv.h << ' ' << hsv.s << ' ' << hsv.v << " -> " << rgb.r << ' ' << rgb.g << ' ' << rgb.b << "]\n";
-        }
-#endif
-        //grid.setPixel(c,r,val.r, val.g, val.b);
       }
-#if DEBUG
-      if(r==0) Serial << endl;
-#endif
     }
     FastLED.show();
-    delay(100);
     
     //hasRun = true;
   }
