@@ -73,34 +73,6 @@ class Grid {
     }
     ~Grid() { delete[] m_cells; }
 
-#if false
-    void setWCS(gridwcs_t wcsLLx, gridwcs_t wcsLLy, gridwcs_t wcsURx, gridwcs_t wcsURy) {
-      m_wcsLLx = wcsLLx; m_wcsLLy = wcsLLy; 
-      m_wcsURx = wcsURx; m_wcsURy = wcsURy; 
-      m_wcsRangex = wcsURx - wcsLLx;
-      m_wcsRangey = wcsURy - wcsLLy;
-      m_wcsStepx = m_wcsRangex/m_nCols;
-      m_wcsStepy = m_wcsRangey/m_nRows;
-    }
-
-    void setPixel(gridwcs_t wcsX, gridwcs_t wcsY, int r, int g, int b) {
-      int pixId;
-      // convert to pix coord
-      pixId = wcsToPixId(wcsX, wcsY);
-      // write pixel
-      m_cells[pixId] = CRGB(r, g, b);
-    }
-    void setPixel(gridwcs_t wcsX, gridwcs_t wcsY, CRGB rgb) {
-      int pixId;
-      pixId = wcsToPixId(wcsX,wcsY);
-      m_cells[pixId] = rgb;
-    }
-   void setPixel(gridwcs_t wcsX, gridwcs_t wcsY, CHSV hsv) {
-      int pixId;
-      pixId = wcsToPixId(wcsX,wcsY);
-      m_cells[pixId] = hsv;
-    }
- #endif
     int crToPixId(int c, int r) {
       if(c<0 || c>=m_nCols || r<0 || r>=m_nRows) return 0;
       if((r&0x01)==1) { c = m_nCols - c - 1; }

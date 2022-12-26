@@ -8,6 +8,7 @@
 #endif
 
 #if defined(ARDUINO_ARCH_AVR)
+
 const uint8_t PROGMEM gamma8Table[] = {
 #elif defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
 const uint8_t gamma8Table[] = {
@@ -41,7 +42,6 @@ inline byte gamma8(byte val) {
   return gamma8Table[val];
 #endif
 }
-
 
 #define __GAMMA_INCLUDED__
 #endif

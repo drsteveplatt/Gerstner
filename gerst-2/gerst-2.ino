@@ -24,6 +24,7 @@ GridWorld gerstWorld(GRIDCOLS, GRIDROWS);
 GerstWave gerst;
 GerstWave gerst2;
 GerstWave gerst3;
+GerstWave gerst4;
 
 // LL/UL XY define the display space
 #define WCS_LLX 0
@@ -95,7 +96,16 @@ void setup() {
     gerst3.setRangeWavelength(150, 250);
     gerst3.setRangeVelocity(-200, 200);
     gerst3.setRangeAngle(0, angleMap(PI/2));
-  
+
+  gerst4.init(&gerstWorld, &accum);
+//            duration maxAmpl wavelength velocity angle
+    gerst4.start(5000, 200, 150, -100, angleMap(2*PI/3));
+    gerst4.setRangeDuration(5000, 15000);
+    gerst4.setRangeAmplitude(200, 300);
+    gerst4.setRangeWavelength(150, 250);
+    gerst4.setRangeVelocity(-200, 200);
+    gerst4.setRangeAngle(angleMap(PI/3), angleMap(2*PI/3));
+    
   FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
 
 }
@@ -109,6 +119,7 @@ void loop() {
     gerst.calc();
     gerst2.calc();
     gerst3.calc();
+    gerst4.calc();
     for(int r=0; r<GRIDROWS; r++) {
       for(int c=0; c<GRIDCOLS; c++) {
         CHSV hsv;

@@ -43,7 +43,8 @@ void GerstWave::calc() {
   gridwcs_t x, y, u, v, theta;
   long int u0, v0;
   int16_t cs, sn, height;
-  int32_t du, dt;
+  int32_t curAmplitude; // scales from 0..m_maxAmplitude depending on time in wave lifespan
+  int32_t du, dt, tInDuration;
   tNow = millis();
   if(m_duration==-1 || (m_duration>0 && (tNow-m_startTime > m_duration))) {
     // old wave is over, start a new one
@@ -60,6 +61,11 @@ void GerstWave::calc() {
   // now fill all of the p
   cs = cos16(m_angle);
   sn = sin16(m_angle);
+  curAmplitude = m_maxAmplitude;
+  tInDuration = tNow-m_startTime;     // should be [0..m_duration)
+  if(tInDuration<m_duration/6)  curAmplitude = map(tInDuration, 0,m_duration/6, 0,m_maxAmplitude);
+  else if(tInDuration>(5*m_duration)/6)  curAmplitude = map(tInDuration, (5*m_duration)/6,m_duration, m_maxAmplitude,0);
+  else curAmplitude = m_maxAmplitude;
   for(int r=0; r<m_nRows; r++) {
     for(int c=0; c<m_nCols; c++) {
       CRGB val;
@@ -76,32 +82,8 @@ void GerstWave::calc() {
       //while(theta>m_wavelength) theta -= m_wavelength;
       theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
       height = cos16(theta);    // height is in range -32767..32767
-#define DEBUG false
-#if DEBUG
-      if(r==0) {
-        Serial << "calc:  c: " << c << " u,v: " << u << " theta: " << theta << " premap height: " << height;
-      }
-#endif
-      height = map(height, -32767,32767, -m_maxAmplitude,m_maxAmplitude); // map to max ampl limit
-#if DEBUG
-      if(r==0) Serial << " postmap height: " << height;
-#endif
+      height = map(height, -32767,32767, -curAmplitude,curAmplitude); // map to max ampl limit
       m_acc->get(c,r) += height;
-#if DEBUG
-      if(r==0) Serial << " acc: " << m_acc->get(c,r) << endl;
-#endif
-      #if false
-      hsv = CHSV(H_LOW,map(height, -32767, 32767, S_LOW,S_HIGH), gamma8(map(height, -32767, 32767, V_LOW,V_HIGH)));
-      // add it to the accumulator
-      m_acc->get(c,r) += CRGB(hsv);
-      #endif
-#if DEBUG
-      if(r==0) {
-        Serial << "cr: " << c << ' ' << r  << " xy: " << x << ' ' << y 
-           << " uv: " << u << ' ' << v << " du dt th  cs sn height: " << du << ' ' << dt << ' ' << theta << ' ' <<  cs << ' ' << sn << ' ' << height << endl;
-        //Serial << "    num(unsh), num, denom: " << ((u%m_wavelength)-m_world->m_wcsLLx) << ' ' <<  (((u%m_wavelength)-m_world->m_wcsLLx)<<16) << ' ' << m_wavelength << endl;
-      }
-#endif
     }
   }
 

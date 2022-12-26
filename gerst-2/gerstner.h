@@ -6,32 +6,6 @@
 #if !defined (__GERSTNER_H__)
 #define __GERSTNER_H__
 
-#if false
-// a "large" CRGB, an accumulator for CRGB values so we can get vals>255
-class CRGB16 {
-  public:
-    union {
-      uint16_t vals[3];
-      struct { uint16_t r,g,b; };
-      struct { uint16_t red, green, blue; };
-    };
-  private:
-    uint16_t max() { return r>g ? (r>b?r:b) : (g>b?g:b); };
-  public:
-    CRGB16(): r(0),g(0),b(0) {};
-    CRGB16(int tr, int tg, int tb):r(tr), g(tg), b(tb) {};
-    ~CRGB16() {};
-    CRGB16& operator+(CRGB rgb) { r += rgb.r; g += rgb.g; b += rgb.b; return *this; };
-    void clip() { uint16_t mx = max();
-      if(mx>255) { r=map(r,0,mx,0,255); g=map(g,0,mx,0,255); b=map(b,0,mx,0,255); };
-    };
-    void scale(int n) { r /= n; g /= n; b /= n; }
-    void clear() { r=g=b=0; }
-    uint16_t& operator[](int v) { return vals[v]; }
-    CRGB16& operator+=(CRGB rgb) { r += rgb.r;  g += rgb.g; b+=rgb.b; return *this; }
-};
-#endif
-
 // Grid of 16-but accumulators for RGB values
 class GridHeight {
   private:
