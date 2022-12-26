@@ -6,6 +6,7 @@
 #if !defined (__GERSTNER_H__)
 #define __GERSTNER_H__
 
+#if false
 // a "large" CRGB, an accumulator for CRGB values so we can get vals>255
 class CRGB16 {
   public:
@@ -29,6 +30,7 @@ class CRGB16 {
     uint16_t& operator[](int v) { return vals[v]; }
     CRGB16& operator+=(CRGB rgb) { r += rgb.r;  g += rgb.g; b+=rgb.b; return *this; }
 };
+#endif
 
 // Grid of 16-but accumulators for RGB values
 class GridHeight {
@@ -55,14 +57,26 @@ class GridHeight {
 
 };
 
+// Limits for appropriate GerstWave components
+//    Duration: -1: reset immediately; 0: never rest; >0: reset after <val> ms
+#define GW_MIN_DURATION   -1
+//    Amplitude: of a single wave; summed/averaged over all waves
+//        Val will be in range [-MAX MAX].  Color is scaled depending on the final value [COLMIN COLMAX]
+#define GW_MAX_AMPLITUDE    1000
+
 class GerstWave {
   private:
     long unsigned int m_startTime;   // ms
     long unsigned int m_duration;     // ms; wave ends at startTIme+duration
+      uint32_t m_rngMinDuration, m_rngMaxDuration;
     int32_t m_maxAmplitude;           // 0..32767
-    int32_t m_wavelength;               // in wcs units
+      int32_t m_rngMinAmplitude, m_rngMaxAmplitude;
+    uint32_t m_wavelength;               // in wcs units
+      uint32_t m_rngMinWavelength, m_rngMaxWavelength;
     int32_t  m_velocity;                 // in wcs units/sec (better resolution)  du/dt, essentially
+      int32_t m_rngMinVelocity, m_rngMaxVelocity;
     uint32_t m_angle;                     // 0..65535, per FastLED trig16 functions
+      uint32_t m_rngMinAngle, m_rngMaxAngle;
     // These will be based on m_grid.  m_grid and m_acc are assumed to be the same size.
     uint16_t m_nRows, m_nCols;
     // Note that m_grid and m_acc are both passed in via init()
@@ -70,13 +84,31 @@ class GerstWave {
     GridHeight* m_acc;
   public:
     GerstWave(): m_world(NULL), m_acc(NULL),
-      m_nRows(0), m_nCols(0), m_startTime(0), m_duration(0) {  };
+      m_nRows(0), m_nCols(0), m_startTime(0), m_duration(0),
+      m_rngMinDuration(1000), m_rngMaxDuration(20000),
+      m_rngMinAmplitude(50), m_rngMaxAmplitude(10000),
+      m_rngMinWavelength(32), m_rngMaxWavelength(1000),
+      m_rngMinVelocity(-10000), m_rngMaxVelocity(10000),
+      m_rngMinAngle(0), m_rngMaxAngle(65535)
+      {  };
     ~GerstWave() { delete[] m_acc; };
     void init(GridWorld* world, GridHeight* acc) {
       m_world = world;
       m_acc = acc;
       m_nRows = m_acc->rows();
       m_nCols = m_acc->cols();
+    }
+    void setRangeDuration(uint32_t min, uint32_t max) { m_rngMinDuration=min; m_rngMaxDuration=max; }
+    void setRangeAmplitude(int32_t min, int32_t max) { m_rngMinAmplitude=min; m_rngMaxAmplitude=max; }
+    void setRangeWavelength(uint32_t min, uint32_t max) { m_rngMinWavelength=min; m_rngMaxWavelength=max; }
+    void setRangeVelocity(int32_t min, int32_t max) { m_rngMinVelocity=min; m_rngMaxVelocity=max; }
+    void setRangeAngle(int32_t min, int32_t max) { m_rngMinAngle=min; m_rngMaxAngle=max; }
+    void copyRange(const GerstWave& g) {
+      m_rngMinDuration = g.m_rngMinDuration;          m_rngMaxDuration = g.m_rngMaxDuration;
+      m_rngMinAmplitude = g.m_rngMinAmplitude;      m_rngMaxAmplitude = g.m_rngMaxAmplitude;
+      m_rngMinWavelength = g.m_rngMinWavelength;  m_rngMaxWavelength = g.m_rngMaxWavelength;
+      m_rngMinVelocity = g.m_rngMinVelocity;            m_rngMaxVelocity = g.m_rngMaxVelocity;
+      m_rngMinAngle = g.m_rngMinAngle;                   m_rngMaxAngle = g.m_rngMaxAngle;
     }
     void start(long unsigned int dur, int32_t maxAmpl, int32_t wavelength, uint32_t velocity, uint32_t theta) {
       // create a wave with
@@ -86,13 +118,13 @@ class GerstWave {
       //    velocity: motion in +x/+y direction, WCS units/sec
       //    theta: (0..65535) angle of U wrt X axis
       m_startTime = millis();
-      m_duration = dur;
-      m_maxAmplitude = maxAmpl;
-      m_wavelength = wavelength;
+      m_duration =  dur<GW_MIN_DURATION ? GW_MIN_DURATION : dur;
+      m_maxAmplitude = maxAmpl<1 ? 1 : (maxAmpl > GW_MAX_AMPLITUDE ? GW_MAX_AMPLITUDE : maxAmpl);
+      m_wavelength = wavelength<1 ? 1 : wavelength;
       m_velocity = velocity;
-      m_angle = theta;
+      m_angle = theta & 0x0000ffff;  // 0..65535)
     }
-    int32_t calcUV(int u, int v);
+    
     void calc();
 
 };

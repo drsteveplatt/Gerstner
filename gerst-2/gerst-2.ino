@@ -40,11 +40,11 @@ GerstWave gerst3;
 #define H_LOW ((161*256)/360)
 #define S_LOW 255
 // V_LOW was ((30*256)/100)
-#define V_LOW ((40*256)/100)
+#define V_LOW ((20*256)/100)
 
 #define H_ZERO H_LOW
-#define S_ZERO 240
-#define V_ZERO ((45*256)/100)
+#define S_ZERO 255
+#define V_ZERO ((35*256)/100)
 
 #define H_HIGH H_LOW
 //#define S_HIGH ((55*256)/100)
@@ -68,15 +68,33 @@ void setup() {
   accum.init(GRIDCOLS, GRIDROWS);
 
   // First test is a single wave
+//            duration maxAmpl wavelength velocity angle
   gerst.init(&gerstWorld, &accum);
-  gerst.start(0, 200, 1000, 100, angleMap(PI/6));
+//            duration maxAmpl wavelength velocity angle
+    gerst.start(5000, 900, 1000, 100, angleMap(PI/6));
+    gerst.setRangeDuration(5000, 15000);
+    gerst.setRangeAmplitude(800, 1000);
+    gerst.setRangeWavelength(750, 2000);
+    gerst.setRangeVelocity(-200, 200);
+    gerst.setRangeAngle(0, angleMap(PI/4));
 
   gerst2.init(&gerstWorld, &accum);
-  gerst2.start(0, 50, 250, 200, angleMap(PI/2));
-
-  gerst3.init(&gerstWorld, &accum);
-  gerst3.start(0, 25, 200, -100, angleMap(PI/3));
 //            duration maxAmpl wavelength velocity angle
+    gerst2.start(3000, 200, 250, 200, angleMap(PI/2));
+    gerst2.setRangeDuration(5000, 15000);
+    gerst2.setRangeAmplitude(200, 300);
+    gerst2.setRangeWavelength(250, 350);
+    gerst2.setRangeVelocity(-200, 200);
+    gerst2.setRangeAngle(0, angleMap(PI/2));
+    
+  gerst3.init(&gerstWorld, &accum);
+//            duration maxAmpl wavelength velocity angle
+    gerst3.start(5000, 200, 150, -100, angleMap(PI/3));
+    gerst3.setRangeDuration(5000, 15000);
+    gerst3.setRangeAmplitude(200, 300);
+    gerst3.setRangeWavelength(150, 250);
+    gerst3.setRangeVelocity(-200, 200);
+    gerst3.setRangeAngle(0, angleMap(PI/2));
   
   FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
 
@@ -98,23 +116,26 @@ void loop() {
         gridwcs_t height;
         //CRGB16 val(accum.get(c,r));
         height = accum.get(c,r);
-        if(height<WCS_ZMIN) height=WCS_ZMIN;
-        if(height>WCS_ZMAX) height=WCS_ZMAX;
+        //height += 200;
+       // if(height<WCS_ZMIN) height=WCS_ZMIN;
+      //  if(height>WCS_ZMAX) height=WCS_ZMAX;
         if(height<=0) {
-          hsv = CHSV(H_LOW,map(height, WCS_ZMIN, 0, S_LOW,S_ZERO), gamma8(map(height, WCS_ZMIN, 0, V_LOW,V_ZERO)));
+          hsv = CHSV(H_LOW,map(height, -GW_MAX_AMPLITUDE, 0, S_LOW,S_ZERO), gamma8(map(height, GW_MAX_AMPLITUDE, 0, V_LOW,V_ZERO)));
         } else {
-          hsv = CHSV(H_LOW,map(height, 0, WCS_ZMAX, S_ZERO,S_HIGH), gamma8(map(height, 0, WCS_ZMAX, V_ZERO,V_HIGH)));          
+          hsv = CHSV(H_LOW,map(height, 0, GW_MAX_AMPLITUDE, S_ZERO,S_HIGH), gamma8(map(height, 0, GW_MAX_AMPLITUDE, V_ZERO,V_HIGH)));          
         }
         rgb = CRGB(hsv);
         grid.setPixel(c,r, rgb);
 #define DEBUG false
 #if DEBUG
-        Serial << '[' << height << ": " << hsv.h << ' ' << hsv.s << ' ' << hsv.v << " -> " << rgb.r << ' ' << rgb.g << ' ' << rgb.b << "]\n";
+        if(r==0) {
+          Serial << "loop: [" << height << ": " << hsv.h << ' ' << hsv.s << ' ' << hsv.v << " -> " << rgb.r << ' ' << rgb.g << ' ' << rgb.b << "]\n";
+        }
 #endif
         //grid.setPixel(c,r,val.r, val.g, val.b);
       }
 #if DEBUG
-      Serial << endl;
+      if(r==0) Serial << endl;
 #endif
     }
     FastLED.show();

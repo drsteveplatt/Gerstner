@@ -10,8 +10,6 @@
 
 #include <Streaming.h>
 
-
-
 static gridwcs_t trigMult(gridwcs_t val, int16_t cs) {
   // multiplies a wcs val by the result of a FastLED 16-bit cos/sin val
   // The cos/sin val is [-32767 32767].
@@ -37,9 +35,6 @@ static gridwcs_t trigMult(gridwcs_t val, int16_t cs) {
   return resPos ? res : -res;
 }
 
-int32_t GerstWave::calcUV(int u, int v) {
-  // calculates the value at uv
-}
 void GerstWave::calc() {
   // add this wave to the accompanying m_acc accumulator with values based on the wave parameters and the current time.
   long unsigned int tNow;
@@ -50,9 +45,15 @@ void GerstWave::calc() {
   int16_t cs, sn, height;
   int32_t du, dt;
   tNow = millis();
-  if(m_duration>0 && (tNow-m_startTime > m_duration)) {
+  if(m_duration==-1 || (m_duration>0 && (tNow-m_startTime > m_duration))) {
     // old wave is over, start a new one
-    // blah blah
+    m_duration = random(m_rngMinDuration, m_rngMaxDuration);
+    m_maxAmplitude = random(m_rngMinAmplitude, m_rngMaxAmplitude);
+    m_wavelength = random(m_rngMinWavelength, m_rngMaxWavelength);
+    m_velocity = random(m_rngMinVelocity, m_rngMaxVelocity);
+    m_angle = random(m_rngMinAngle, m_rngMaxAngle);
+    Serial << "Calc: wave regen dur: " << m_duration << " ampl: " << m_maxAmplitude
+      << " wavelength: " << m_wavelength << " vel: " << m_velocity << " angle: " << m_angle << endl;
     // and rest the time
     m_startTime = tNow;
   }
@@ -74,14 +75,26 @@ void GerstWave::calc() {
       //theta = u /*map(c, 0,GRIDCOLS, 0,65535)*2 + phaseShiftX*/;
       //while(theta>m_wavelength) theta -= m_wavelength;
       theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
-      height = cos16(theta);
+      height = cos16(theta);    // height is in range -32767..32767
+#define DEBUG false
+#if DEBUG
+      if(r==0) {
+        Serial << "calc:  c: " << c << " u,v: " << u << " theta: " << theta << " premap height: " << height;
+      }
+#endif
+      height = map(height, -32767,32767, -m_maxAmplitude,m_maxAmplitude); // map to max ampl limit
+#if DEBUG
+      if(r==0) Serial << " postmap height: " << height;
+#endif
       m_acc->get(c,r) += height;
+#if DEBUG
+      if(r==0) Serial << " acc: " << m_acc->get(c,r) << endl;
+#endif
       #if false
       hsv = CHSV(H_LOW,map(height, -32767, 32767, S_LOW,S_HIGH), gamma8(map(height, -32767, 32767, V_LOW,V_HIGH)));
       // add it to the accumulator
       m_acc->get(c,r) += CRGB(hsv);
       #endif
-#define DEBUG false
 #if DEBUG
       if(r==0) {
         Serial << "cr: " << c << ' ' << r  << " xy: " << x << ' ' << y 
