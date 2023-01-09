@@ -17,7 +17,9 @@
 #define GRIDCOLS 16
 #define GRIDROWS 16
 
-Grid grid(GRIDCOLS, GRIDROWS);
+CRGB theLeds[GRIDCOLS*GRIDROWS];
+
+Grid<1, 1> grid(GRIDCOLS, GRIDROWS, theLeds);
 GridHeight accum;
 
 GridWorld gerstWorld(GRIDCOLS, GRIDROWS);

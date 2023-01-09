@@ -81,6 +81,8 @@ void GerstWave::calc() {
       //while(theta>m_wavelength) theta -= m_wavelength;
       theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
       height = cos16(theta);    // height is in range -32767..32767
+#define NEWFLATTENINGCODE false
+#if NEWFLATTENINGCODE
       if(r==0) {
         if(c==0) Serial << endl;
         Serial << "cr: " << c << ' ' << r << " height: " << height << " parts: " << (height+32767)/2 << ' '
@@ -93,6 +95,7 @@ void GerstWave::calc() {
       if(r==0) {
         Serial << " fixed: " << height << endl;
       }
+#endif // NEWFLATTENINGCODE
       height = map(height, -32767,32767, -curAmplitude,curAmplitude); // map to max ampl limit
       m_acc->get(c,r) += height;
     }
