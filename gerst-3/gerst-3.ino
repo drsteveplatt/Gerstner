@@ -14,15 +14,24 @@
 //#include "gerst-test-2.h"
 #include "gamma.h"
 
-#define GRIDCOLS 16
-#define GRIDROWS 16
+// size of each panel in pixels
+#define PANELPIXELCOLS 16
+#define PANELPIXELROWS 16
 
-CRGB theLeds[GRIDCOLS*GRIDROWS];
+// grid dimensions in panels
+#define GRIDPANELCOLS 1
+#define GRIDPANELROWS 1
 
-Grid<1, 1> grid(GRIDCOLS, GRIDROWS, theLeds);
+// grid dimension in pixels
+#define GRIDPIXELCOLS (GRIDPANELCOLS*PANELPIXELCOLS)
+#define GRIDPIXELROWS (GRIDPANELROWS*PANELPIXELROWS)
+
+CRGB theLeds[GRIDPIXELCOLS*GRIDPIXELROWS];
+
+Grid<GRIDPANELCOLS, GRIDPANELROWS> grid(PANELPIXELCOLS, PANELPIXELROWS, theLeds);
 GridHeight accum;
 
-GridWorld gerstWorld(GRIDCOLS, GRIDROWS);
+GridWorld gerstWorld(GRIDPIXELCOLS, GRIDPIXELROWS);
 GerstWave gerst;
 GerstWave gerst2;
 GerstWave gerst3;
@@ -68,7 +77,7 @@ void setup() {
   // Initialize the display grid
   gerstWorld.setWcs(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
   // Initialize the accumulator grid
-  accum.init(GRIDCOLS, GRIDROWS);
+  accum.init(GRIDPIXELCOLS, GRIDPIXELROWS);
 
   // First test is a single wave
 //            duration maxAmpl wavelength velocity angle
@@ -108,7 +117,7 @@ void setup() {
     gerst4.setRangeVelocity(-200, 200);
     gerst4.setRangeAngle(angleMap(PI/3), angleMap(2*PI/3));
     
-  FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDROWS*GRIDCOLS);
+  FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDPIXELCOLS*GRIDPIXELROWS);
 
 }
 
@@ -130,8 +139,8 @@ void loop() {
     //gerst2.calc();
    // gerst3.calc();
     //gerst4.calc();
-    for(int r=0; r<GRIDROWS; r++) {
-      for(int c=0; c<GRIDCOLS; c++) {
+    for(int r=0; r<GRIDPIXELROWS; r++) {
+      for(int c=0; c<GRIDPIXELCOLS; c++) {
         CHSV hsv;
         CRGB rgb;
         gridwcs_t height;
