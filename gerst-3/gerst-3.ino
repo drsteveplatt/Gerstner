@@ -19,12 +19,14 @@
 #define PANELPIXELROWS 16
 
 // grid dimensions in panels
-#define GRIDPANELCOLS 1
-#define GRIDPANELROWS 1
+#define GRIDPANELCOLS 2
+#define GRIDPANELROWS 2
 
 // grid dimension in pixels
 #define GRIDPIXELCOLS (GRIDPANELCOLS*PANELPIXELCOLS)
 #define GRIDPIXELROWS (GRIDPANELROWS*PANELPIXELROWS)
+// other useful things
+#define PANELPIXELS (PANELPIXELCOLS*PANELPIXELROWS)
 
 CRGB theLeds[GRIDPIXELCOLS*GRIDPIXELROWS];
 
@@ -40,8 +42,8 @@ GerstWave gerst4;
 // LL/UL XY define the display space
 #define WCS_LLX 0
 #define WCS_LLY 0
-#define WCS_URX (999)
-#define WCS_URY (999)
+#define WCS_URX (1000*GRIDPANELCOLS-1)
+#define WCS_URY (1000*GRIDPANELROWS-1)
 
 // ZMIN/ZMAX define the range for chromatic interpolation
 #define WCS_ZMIN   -100
@@ -69,12 +71,27 @@ int32_t angleMap(float angle) {
   return (int32_t)((angle*65535)/(2*PI));
 }
 
+#define DEBUG false
+
 void setup() {
   Serial.begin(115200);
   delay(200); // allow Serial to come online
   Serial << "Gerstner full test 2 starting\n";
+  Serial << "PanelPixel CR: " << PANELPIXELCOLS << ' ' << PANELPIXELROWS
+    << " GridPixel CR: " << GRIDPIXELCOLS << ' ' << GRIDPIXELROWS
+    << " Panel size: " << PANELPIXELCOLS*PANELPIXELROWS
+    << " Grid size: " << GRIDPIXELCOLS*GRIDPIXELROWS
+    << endl;
 
-  // Initialize the display grid
+  //grid.dump();
+
+  // set up the LED strips
+  FastLED.addLeds<WS2811, 14, GRB>(theLeds, PANELPIXELS);                                         // LL
+  FastLED.addLeds<WS2811, 25, GRB>(&(theLeds[PANELPIXELS]), PANELPIXELS);          // LR
+  FastLED.addLeds<WS2811, 26, GRB>(&(theLeds[PANELPIXELS*2]), PANELPIXELS);       // UR
+  FastLED.addLeds<WS2811, 27, GRB>(&(theLeds[PANELPIXELS*3]), PANELPIXELS);       // UL
+
+  // Initialize the world coord sys
   gerstWorld.setWcs(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
   // Initialize the accumulator grid
   accum.init(GRIDPIXELCOLS, GRIDPIXELROWS);
@@ -116,46 +133,79 @@ void setup() {
     gerst4.setRangeWavelength(150, 250);
     gerst4.setRangeVelocity(-200, 200);
     gerst4.setRangeAngle(angleMap(PI/3), angleMap(2*PI/3));
-    
-  FastLED.addLeds<WS2811, 25, GRB>(grid.theLeds(), GRIDPIXELCOLS*GRIDPIXELROWS);
 
+#if DEBUG && false
+    fill_solid(theLeds, GRIDPIXELCOLS*GRIDPIXELROWS, CRGB(0, 0, 16));
+    grid.setPixel(7,7,CRGB::Red);
+    grid.setPixel(8+16,7,CRGB::Green);
+    grid.setPixel(7,8+16, CRGB::Blue);
+    grid.setPixel(8+16, 8+16, CRGB::White);
+    FastLED.show();
+#endif
+  #if DEBUG
+    fill_solid(theLeds, GRIDPIXELCOLS*GRIDPIXELROWS, CRGB(0, 0, 16));
+    for(int i=0; i<32; i++) {
+      Serial << "Setting cr: " << 8 << ' ' << i << " to HSV[" << map(i,0,31,0,255) << ",255,255]\n";
+      //grid.setPixel(7,i, CRGB::Red);                      // LL red
+      //grid.setPixel(7+16, i, CRGB::Yellow);           // LR yellow
+      //grid.setPixel(7+16, i+16, CRGB::Green);     // UR green
+      //grid.setPixel(6, i+16, CRGB::Purple);           // UL purple
+      grid.setPixel(8, i, CHSV( map(i,0,31,0,255), 255, 128));
+    }
+    FastLED.show();
+  #endif
+    
 }
 
+#if DEBUG
 void loop() {
-  // testing actual gerstwave
-  static bool hasRun = false;
+  
+}
+#else
+void loop() {
+  // performance measurement variables
   static uint32_t frameCount = 0;
   static uint32_t frameStartTime = 0;
   static const uint32_t maxFrameCount = 100;
-  if(!hasRun) {
 
-    if(frameCount>maxFrameCount && millis()>frameStartTime) {
-      Serial << "Perf: " << (frameCount*1000)/(millis()-frameStartTime) << " frames/sec\n";
-      frameStartTime = millis();
-      frameCount = 0;
-    } else frameCount++;
-    accum.clear();
-    gerst.calc();
-    //gerst2.calc();
-   // gerst3.calc();
-    //gerst4.calc();
+  // performance measurement display
+  if(frameCount>maxFrameCount && millis()>frameStartTime) {
+    Serial << "Perf: " << (frameCount*1000)/(millis()-frameStartTime) << " frames/sec\n";
+    frameStartTime = millis();
+    frameCount = 0;
+  } else frameCount++;
+
+#if DEBUG
+  int hue=0;
+  fill_gradient(theLeds, 0, CHSV(hue,255,255), GRIDPIXELCOLS*GRIDPIXELROWS-1, CHSV((hue+1)&0xff, 255,255), LONGEST_HUES);
+  if(hue==255) hue=0; else hue++;
+#else
+  // calculate the new frame
+  accum.clear();
+  gerst.calc();
+  gerst2.calc();
+  gerst3.calc();
+  gerst4.calc();
+
+  // convert to colors in the led array and display
+  for(int c=0; c<GRIDPIXELCOLS; c++) {
     for(int r=0; r<GRIDPIXELROWS; r++) {
-      for(int c=0; c<GRIDPIXELCOLS; c++) {
-        CHSV hsv;
-        CRGB rgb;
-        gridwcs_t height;
-        height = accum.get(c,r);
-        if(height<=0) {
-          hsv = CHSV(H_LOW,map(height, -GW_MAX_AMPLITUDE, 0, S_LOW,S_ZERO), gamma8(map(height, GW_MAX_AMPLITUDE, 0, V_LOW,V_ZERO)));
-        } else {
-          hsv = CHSV(H_LOW,map(height, 0, GW_MAX_AMPLITUDE, S_ZERO,S_HIGH), gamma8(map(height, 0, GW_MAX_AMPLITUDE, V_ZERO,V_HIGH)));          
-        }
-        rgb = CRGB(hsv);
-        grid.setPixel(c,r, rgb);
+      CHSV hsv;
+      CRGB rgb;
+      gridwcs_t height;
+      height = accum.get(c,r);
+      if(height<=0) {
+        hsv = CHSV(H_LOW,map(height, -GW_MAX_AMPLITUDE, 0, S_LOW,S_ZERO), gamma8(map(height, GW_MAX_AMPLITUDE, 0, V_LOW,V_ZERO)));
+      } else {
+        hsv = CHSV(H_LOW,map(height, 0, GW_MAX_AMPLITUDE, S_ZERO,S_HIGH), gamma8(map(height, 0, GW_MAX_AMPLITUDE, V_ZERO,V_HIGH)));          
       }
+      rgb = CRGB(hsv);
+      grid.setPixel(c,r, rgb);
     }
-    FastLED.show();
-    
-    //hasRun = true;
   }
+#endif
+
+  FastLED.show();
+
 }
+#endif
