@@ -71,8 +71,6 @@ int32_t angleMap(float angle) {
   return (int32_t)((angle*65535)/(2*PI));
 }
 
-#define DEBUG false
-
 void setup() {
   Serial.begin(115200);
   delay(200); // allow Serial to come online
@@ -104,7 +102,7 @@ void setup() {
     gerst.setRangeDuration(5000, 15000);
     gerst.setRangeAmplitude(800, 1000);
     gerst.setRangeWavelength(800, 1500);
-    gerst.setRangeVelocity(-200, 200);
+    gerst.setRangeSpeed(-200, 200);
     gerst.setRangeAngle(0, angleMap(PI/4));
 
   gerst2.init(&gerstWorld, &accum);
@@ -113,7 +111,7 @@ void setup() {
     gerst2.setRangeDuration(5000, 15000);
     gerst2.setRangeAmplitude(200, 300);
     gerst2.setRangeWavelength(250, 350);
-    gerst2.setRangeVelocity(-200, 200);
+    gerst2.setRangeSpeed(-200, 200);
     gerst2.setRangeAngle(0, angleMap(PI/2));
     
   gerst3.init(&gerstWorld, &accum);
@@ -122,7 +120,7 @@ void setup() {
     gerst3.setRangeDuration(5000, 15000);
     gerst3.setRangeAmplitude(200, 300);
     gerst3.setRangeWavelength(150, 250);
-    gerst3.setRangeVelocity(-200, 200);
+    gerst3.setRangeSpeed(-200, 200);
     gerst3.setRangeAngle(0, angleMap(PI/2));
 
   gerst4.init(&gerstWorld, &accum);
@@ -131,37 +129,11 @@ void setup() {
     gerst4.setRangeDuration(5000, 15000);
     gerst4.setRangeAmplitude(200, 300);
     gerst4.setRangeWavelength(150, 250);
-    gerst4.setRangeVelocity(-200, 200);
+    gerst4.setRangeSpeed(-200, 200);
     gerst4.setRangeAngle(angleMap(PI/3), angleMap(2*PI/3));
 
-#if DEBUG && false
-    fill_solid(theLeds, GRIDPIXELCOLS*GRIDPIXELROWS, CRGB(0, 0, 16));
-    grid.setPixel(7,7,CRGB::Red);
-    grid.setPixel(8+16,7,CRGB::Green);
-    grid.setPixel(7,8+16, CRGB::Blue);
-    grid.setPixel(8+16, 8+16, CRGB::White);
-    FastLED.show();
-#endif
-  #if DEBUG
-    fill_solid(theLeds, GRIDPIXELCOLS*GRIDPIXELROWS, CRGB(0, 0, 16));
-    for(int i=0; i<32; i++) {
-      Serial << "Setting cr: " << 8 << ' ' << i << " to HSV[" << map(i,0,31,0,255) << ",255,255]\n";
-      //grid.setPixel(7,i, CRGB::Red);                      // LL red
-      //grid.setPixel(7+16, i, CRGB::Yellow);           // LR yellow
-      //grid.setPixel(7+16, i+16, CRGB::Green);     // UR green
-      //grid.setPixel(6, i+16, CRGB::Purple);           // UL purple
-      grid.setPixel(8, i, CHSV( map(i,0,31,0,255), 255, 128));
-    }
-    FastLED.show();
-  #endif
-    
 }
 
-#if DEBUG
-void loop() {
-  
-}
-#else
 void loop() {
   // performance measurement variables
   static uint32_t frameCount = 0;
@@ -175,11 +147,6 @@ void loop() {
     frameCount = 0;
   } else frameCount++;
 
-#if DEBUG
-  int hue=0;
-  fill_gradient(theLeds, 0, CHSV(hue,255,255), GRIDPIXELCOLS*GRIDPIXELROWS-1, CHSV((hue+1)&0xff, 255,255), LONGEST_HUES);
-  if(hue==255) hue=0; else hue++;
-#else
   // calculate the new frame
   accum.clear();
   gerst.calc();
@@ -203,9 +170,7 @@ void loop() {
       grid.setPixel(c,r, rgb);
     }
   }
-#endif
 
   FastLED.show();
 
 }
-#endif

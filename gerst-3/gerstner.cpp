@@ -52,7 +52,7 @@ void GerstWave::calc() {
     m_duration = random(m_rngMinDuration, m_rngMaxDuration);
     m_maxAmplitude = random(m_rngMinAmplitude, m_rngMaxAmplitude);
     m_wavelength = random(m_rngMinWavelength, m_rngMaxWavelength);
-    m_velocity = random(m_rngMinVelocity, m_rngMaxVelocity);
+    m_speed = random(m_rngMinSpeed, m_rngMaxSpeed);
     m_angle = random(m_rngMinAngle, m_rngMaxAngle);
     // and rest the time
     m_startTime = tNow;
@@ -74,7 +74,7 @@ void GerstWave::calc() {
       v = trigMult(x, -sn) + trigMult(y, cs);
       // shift u by du/dt
       dt = millis()-m_startTime;
-      du = (m_velocity*dt)/1000;
+      du = (m_speed*dt)/1000;
       u -= du;
       // calculate our new color
       //theta = u /*map(c, 0,GRIDCOLS, 0,65535)*2 + phaseShiftX*/;
@@ -83,18 +83,20 @@ void GerstWave::calc() {
       height = cos16(theta);    // height is in range -32767..32767
 #define NEWFLATTENINGCODE false
 #if NEWFLATTENINGCODE
-      if(r==0) {
-        if(c==0) Serial << endl;
-        Serial << "cr: " << c << ' ' << r << " height: " << height << " parts: " << (height+32767)/2 << ' '
-        << ( (height+32767)/2 * (height+32767)/2) 
-        << ' ' << (( (height+32767)/2 * (height+32767)/2) >>14)
-        << ' ' << (( (height+32767)/2 * (height+32767)/2) >>14) - 32767;
-      }
+//      if(r==0) {
+//        if(c==0) Serial << endl;
+//        Serial << "cr: " << c << ' ' << r << " height: " << height << " parts: " << (height+32767)/2 << ' '
+//        << ( (height+32767)/2 * (height+32767)/2) 
+//        << ' ' << (( (height+32767)/2 * (height+32767)/2) >>14)
+ //       << ' ' << (( (height+32767)/2 * (height+32767)/2) >>14) - 32767;
+ //     }
       // wave flattening -- implement w = 2 * ( (h+1)/2 )^k, where h in [0 1]
-      height = 2 * (( (height+32767)/2 * (height+32767)/2) >> 13) - 32767;
+      height = 2 * (( (height+32767)/2 * (height+32767)/2) >> 14) - 32767;
       if(r==0) {
-        Serial << " fixed: " << height << endl;
+//        Serial << " fixed: " << height << endl;
       }
+      if(height>32767) height=32767;
+      if(height<-32767) height=-32767;
 #endif // NEWFLATTENINGCODE
       height = map(height, -32767,32767, -curAmplitude,curAmplitude); // map to max ampl limit
       m_acc->get(c,r) += height;

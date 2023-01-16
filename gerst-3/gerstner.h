@@ -47,8 +47,8 @@ class GerstWave {
       int32_t m_rngMinAmplitude, m_rngMaxAmplitude;
     uint32_t m_wavelength;               // in wcs units
       uint32_t m_rngMinWavelength, m_rngMaxWavelength;
-    int32_t  m_velocity;                 // in wcs units/sec (better resolution)  du/dt, essentially
-      int32_t m_rngMinVelocity, m_rngMaxVelocity;
+    int32_t  m_speed;                 // in wcs units/sec (better resolution)  du/dt, essentially
+      int32_t m_rngMinSpeed, m_rngMaxSpeed;
     uint32_t m_angle;                     // 0..65535, per FastLED trig16 functions
       uint32_t m_rngMinAngle, m_rngMaxAngle;
     // These will be based on m_grid.  m_grid and m_acc are assumed to be the same size.
@@ -62,7 +62,7 @@ class GerstWave {
       m_rngMinDuration(1000), m_rngMaxDuration(20000),
       m_rngMinAmplitude(50), m_rngMaxAmplitude(10000),
       m_rngMinWavelength(32), m_rngMaxWavelength(1000),
-      m_rngMinVelocity(-10000), m_rngMaxVelocity(10000),
+      m_rngMinSpeed(-10000), m_rngMaxSpeed(10000),
       m_rngMinAngle(0), m_rngMaxAngle(65535)
       {  };
     ~GerstWave() { delete[] m_acc; };
@@ -75,27 +75,27 @@ class GerstWave {
     void setRangeDuration(uint32_t min, uint32_t max) { m_rngMinDuration=min; m_rngMaxDuration=max; }
     void setRangeAmplitude(int32_t min, int32_t max) { m_rngMinAmplitude=min; m_rngMaxAmplitude=max; }
     void setRangeWavelength(uint32_t min, uint32_t max) { m_rngMinWavelength=min; m_rngMaxWavelength=max; }
-    void setRangeVelocity(int32_t min, int32_t max) { m_rngMinVelocity=min; m_rngMaxVelocity=max; }
+    void setRangeSpeed(int32_t min, int32_t max) { m_rngMinSpeed=min; m_rngMaxSpeed=max; }
     void setRangeAngle(int32_t min, int32_t max) { m_rngMinAngle=min; m_rngMaxAngle=max; }
     void copyRange(const GerstWave& g) {
       m_rngMinDuration = g.m_rngMinDuration;          m_rngMaxDuration = g.m_rngMaxDuration;
       m_rngMinAmplitude = g.m_rngMinAmplitude;      m_rngMaxAmplitude = g.m_rngMaxAmplitude;
       m_rngMinWavelength = g.m_rngMinWavelength;  m_rngMaxWavelength = g.m_rngMaxWavelength;
-      m_rngMinVelocity = g.m_rngMinVelocity;            m_rngMaxVelocity = g.m_rngMaxVelocity;
+      m_rngMinSpeed = g.m_rngMinSpeed;            m_rngMaxSpeed = g.m_rngMaxSpeed;
       m_rngMinAngle = g.m_rngMinAngle;                   m_rngMaxAngle = g.m_rngMaxAngle;
     }
-    void start(long unsigned int dur, int32_t maxAmpl, int32_t wavelength, uint32_t velocity, uint32_t theta) {
+    void start(long unsigned int dur, int32_t maxAmpl, int32_t wavelength, uint32_t speed, uint32_t theta) {
       // create a wave with
       //    dur: duration in ms (0 -> forever)
       //    maxAmpl: maximum amplitude (0..32767) (0 -> always this ampl, else ramps up/dn over duration
       //    wavelength: wavelength in WCS units
-      //    velocity: motion in +x/+y direction, WCS units/sec
+      //   speed: motion in +x/+y direction, WCS units/sec
       //    theta: (0..65535) angle of U wrt X axis
       m_startTime = millis();
       m_duration =  dur<GW_MIN_DURATION ? GW_MIN_DURATION : dur;
       m_maxAmplitude = maxAmpl<1 ? 1 : (maxAmpl > GW_MAX_AMPLITUDE ? GW_MAX_AMPLITUDE : maxAmpl);
       m_wavelength = wavelength<1 ? 1 : wavelength;
-      m_velocity = velocity;
+      m_speed = speed;
       m_angle = theta & 0x0000ffff;  // 0..65535)
     }
     
