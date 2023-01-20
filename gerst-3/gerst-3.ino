@@ -14,6 +14,8 @@
 //#include "gerst-test-2.h"
 #include "gamma.h"
 
+#define PERF true
+
 // size of each panel in pixels
 #define PANELPIXELCOLS 16
 #define PANELPIXELROWS 16
@@ -71,6 +73,11 @@ int32_t angleMap(float angle) {
   return (int32_t)((angle*65535)/(2*PI));
 }
 
+int32_t steepnessMap(float steepness) {
+  // maps steepness [0.0 1.0] to [0 65535]
+  return (int32_t)(steepness*65535);
+}
+
 void setup() {
   Serial.begin(115200);
   delay(200); // allow Serial to come online
@@ -95,41 +102,49 @@ void setup() {
   accum.init(GRIDPIXELCOLS, GRIDPIXELROWS);
 
   // First test is a single wave
-//            duration maxAmpl wavelength velocity angle
+//            duration maxAmpl wavelength speed angle
   gerst.init(&gerstWorld, &accum);
-//            duration maxAmpl wavelength velocity angle
-    gerst.start(5000, 900, 1500, 100, angleMap(PI/6));
+//            duration maxAmpl wavelength speed angle
+//    gerst.start(5000, 900, 1500, 100, angleMap(PI/6));
+//NEW     duration wavelength steepness angle
+    gerst.start(5000, 1500, steepnessMap(0.5), angleMap(PI/6));
     gerst.setRangeDuration(5000, 15000);
-    gerst.setRangeAmplitude(800, 1000);
-    gerst.setRangeWavelength(800, 1500);
-    gerst.setRangeSpeed(-200, 200);
+//    gerst.setRangeAmplitude(800, 1000);
+    gerst.setRangeWavelength(1000, 1500);
+//  gerst.setRangeSpeed(-200, 200);
     gerst.setRangeAngle(0, angleMap(PI/4));
 
   gerst2.init(&gerstWorld, &accum);
-//            duration maxAmpl wavelength velocity angle
-    gerst2.start(3000, 200, 250, 200, angleMap(PI/2));
+//            duration maxAmpl wavelength speed angle
+//    gerst2.start(3000, 200, 250, 200, angleMap(PI/2));
+//NEW     duration wavelength steepness angle
+    gerst2.start(3000, 1200, steepnessMap(0.5), angleMap(PI/2));
     gerst2.setRangeDuration(5000, 15000);
-    gerst2.setRangeAmplitude(200, 300);
-    gerst2.setRangeWavelength(250, 350);
-    gerst2.setRangeSpeed(-200, 200);
+//    gerst2.setRangeAmplitude(200, 300);
+    gerst2.setRangeWavelength(800, 1200);
+//    gerst2.setRangeSpeed(-200, 200);
     gerst2.setRangeAngle(0, angleMap(PI/2));
     
   gerst3.init(&gerstWorld, &accum);
-//            duration maxAmpl wavelength velocity angle
-    gerst3.start(5000, 200, 150, -100, angleMap(PI/3));
+//            duration maxAmpl wavelength speed angle
+//    gerst3.start(5000, 200, 150, -100, angleMap(PI/3));
+//NEW     duration wavelength steepness angle
+    gerst3.start(5000, 150, steepnessMap(0.5), angleMap(PI/3));
     gerst3.setRangeDuration(5000, 15000);
-    gerst3.setRangeAmplitude(200, 300);
-    gerst3.setRangeWavelength(150, 250);
-    gerst3.setRangeSpeed(-200, 200);
+//    gerst3.setRangeAmplitude(200, 300);
+    gerst3.setRangeWavelength(350, 600);
+//  gerst3.setRangeSpeed(-200, 200);
     gerst3.setRangeAngle(0, angleMap(PI/2));
 
   gerst4.init(&gerstWorld, &accum);
-//            duration maxAmpl wavelength velocity angle
-    gerst4.start(5000, 200, 150, -100, angleMap(2*PI/3));
+//            duration maxAmpl wavelength speed angle
+//    gerst4.start(5000, 200, 150, -100, angleMap(2*PI/3));
+//NEW     duration wavelength steepness angle
+    gerst4.start(5000, 450, steepnessMap(0.5), angleMap(PI/6));
     gerst4.setRangeDuration(5000, 15000);
-    gerst4.setRangeAmplitude(200, 300);
-    gerst4.setRangeWavelength(150, 250);
-    gerst4.setRangeSpeed(-200, 200);
+//    gerst4.setRangeAmplitude(200, 300);
+    gerst4.setRangeWavelength(350, 600);
+//    gerst4.setRangeSpeed(-200, 200);
     gerst4.setRangeAngle(angleMap(PI/3), angleMap(2*PI/3));
 
 }
@@ -141,11 +156,13 @@ void loop() {
   static const uint32_t maxFrameCount = 100;
 
   // performance measurement display
+#if PERF
   if(frameCount>maxFrameCount && millis()>frameStartTime) {
     Serial << "Perf: " << (frameCount*1000)/(millis()-frameStartTime) << " frames/sec\n";
     frameStartTime = millis();
     frameCount = 0;
   } else frameCount++;
+#endif
 
   // calculate the new frame
   accum.clear();
@@ -155,16 +172,24 @@ void loop() {
   gerst4.calc();
 
   // convert to colors in the led array and display
-  for(int c=0; c<GRIDPIXELCOLS; c++) {
-    for(int r=0; r<GRIDPIXELROWS; r++) {
+  // find sum of all max amplitudes so we can scale colors correctly
+  uint32_t sumMaxAmplitude;
+  sumMaxAmplitude = gerst.getMaxAmplitude() + gerst2.getMaxAmplitude() + gerst3.getMaxAmplitude() + gerst4.getMaxAmplitude();
+  // now do each pixel: map to the LED grid
+  for(int r=0; r<GRIDPIXELROWS; r++) {
+    for(int c=0; c<GRIDPIXELCOLS; c++) {
       CHSV hsv;
       CRGB rgb;
       gridwcs_t height;
       height = accum.get(c,r);
+///      if(r==0) { Serial << height << ' ';
+//      if(c==GRIDPIXELCOLS-1) Serial << endl;
+ //     }
+      // for each of these:  was: GW_MAX_AMPLITUDE, changed to sumMaxAmplitude
       if(height<=0) {
-        hsv = CHSV(H_LOW,map(height, -GW_MAX_AMPLITUDE, 0, S_LOW,S_ZERO), gamma8(map(height, GW_MAX_AMPLITUDE, 0, V_LOW,V_ZERO)));
+        hsv = CHSV(H_LOW,map(height, -sumMaxAmplitude, 0, S_LOW,S_ZERO), gamma8(map(height, sumMaxAmplitude, 0, V_LOW,V_ZERO)));
       } else {
-        hsv = CHSV(H_LOW,map(height, 0, GW_MAX_AMPLITUDE, S_ZERO,S_HIGH), gamma8(map(height, 0, GW_MAX_AMPLITUDE, V_ZERO,V_HIGH)));          
+        hsv = CHSV(H_LOW,map(height, 0, sumMaxAmplitude, S_ZERO,S_HIGH), gamma8(map(height, 0, sumMaxAmplitude, V_ZERO,V_HIGH)));          
       }
       rgb = CRGB(hsv);
       grid.setPixel(c,r, rgb);
