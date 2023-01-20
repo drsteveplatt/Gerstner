@@ -38,13 +38,7 @@ class GridWorld {
       m_wcsRangex = m_wcsURx - m_wcsLLx;
       m_wcsRangey = m_wcsURy - m_wcsLLy;
     }
-    int wcsToPixId(gridwcs_t wcsX, gridwcs_t wcsY) {
-      int r,c;
-      if(m_wcsRangex==0 || m_wcsRangey==0) return 0;
-      wcsToCr(wcsX, wcsY, c, r);
-      if((r&0x01)==1) { c = m_nCols - c - 1; }
-      return r*m_nCols + c;
-    }
+
     void wcsToCr(gridwcs_t x, gridwcs_t y, int &c, int& r) {
       c = map(x, m_wcsLLx, m_wcsURx, 0, m_nCols);
       r = map(y, m_wcsLLy, m_wcsURy, 0, m_nRows);
@@ -112,11 +106,6 @@ template<int paneColsPerGrid, int paneRowsPerGrid> class Grid {
         + pipRow*m_pixColsPerPane + pipCol;
 //      Serial << "  crToPixId cr: " << absC << ' ' << absR<< " panel cr: " << pigCol << ' ' << pigRow << " pixel cr: " << pipCol << ' ' << pipRow << " pixelId: " << ret << endl;
       return  ret;
-    }
-    int crToPixIdOLD(int c, int r) {
-      if(c<0 || c>=m_pixColsPerPane*m_paneColsPerGrid || r<0 || r>=m_pixRowsPerPane*m_paneRowsPerGrid) return 0;
-      if((r&0x01)==1) { c = m_pixColsPerPane - c - 1; }
-      return r*m_pixColsPerPane + c;
     }
     
     void setPixel(int col, int row, int r, int g, int b) {
