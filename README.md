@@ -64,10 +64,14 @@ Gerstner waves to the surface.
   
   -- GerstWave.  A single Gerstner wave.  It will have a duration (how long it lasts, in ms), a wavelength (distance
   between crests in WCS units), an angle (which way it faces and flows), and a sharpness (how narrow/pointy the peaks are).
+  
   --- The angle is in FastLED angles (0..65535), with 0 being "the peak runs up rows and it will move to the right",
   with increasing angles moving counterclockwise.
+  
   --- The sharpness varies from 0.0 to 1.0 (preferably), with smaller numbers being flatter
+  
   --- The wave will compute its own speed and amplitude based on the properties of water.
+  
   --- Duration is how long the wave will last (in ms).  It will increase in amplitude during the first quarter of this time
   and decrease during the last quarter.  After 'duration' ms has passed, the wave will automatically be re-created with new
   parameters.
