@@ -91,25 +91,25 @@ void GerstWave::calc() {
       //while(theta>m_wavelength) theta -= m_wavelength;
 
       theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
-      height = cos16(theta);    // height is in range -32767..32767
+      height = sin16(theta);    // height is in range -32767..32767
 #if DEBUG
 if(r==0 & c==0) {
   Serial << "calc: theta: " << theta << " curAmplitude: " << curAmplitude << " cos16(theta): " << height;
 }
 #endif
-#define NEWFLATTENINGCODE false
+#define NEWFLATTENINGCODE true
 #if NEWFLATTENINGCODE
-//      if(r==0) {
-//        if(c==0) Serial << endl;
-//        Serial << "cr: " << c << ' ' << r << " height: " << height << " parts: " << (height+32767)/2 << ' '
-//        << ( (height+32767)/2 * (height+32767)/2) 
-//        << ' ' << (( (height+32767)/2 * (height+32767)/2) >>14)
- //       << ' ' << (( (height+32767)/2 * (height+32767)/2) >>14) - 32767;
- //     }
-      // wave flattening -- implement w = 2 * ( (h+1)/2 )^k, where h in [0 1]
-      height = 2 * (( (height+32767)/2 * (height+32767)/2) >> 14) - 32767;
-      if(height>32767) height=32767;
-      if(height<-32767) height=-32767;
+      // From NVIDIA: https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-1-effective-water-simulation-physical-models
+      // Section on Normals and Tangents, discussion in section 1.2.2, wave shaping (end of section), using k=2
+      // The formula collapses into height = maxAmplitude * (2*((SIN(theta)+1)/2)*((SIN(theta)+1)/2)-1)
+      // which reduces to tmp = sin(theta)+1; height = amplitude* (tmp*tmp/2 - 1)
+      // The amplitude mapping is done after the calculation of (tmp*tmp/2 - 1)
+      // we already have height=cos16(theta) so we just complete the calculation
+      // fixpoint is messy, so (sin+1) * (sin+1) -> sin^2 + 2sin + 2
+      // we bit manipulate a bit to keep the multiplications in int32 range
+      height = ((height*height)>>16) + (height<<1) + (65536<<1);    // height is (sin+1)*(sin+1)
+      height >>= 1;   // height is (sin+1)*(sin+1)/2
+      height -= 65536; // height is (sin+1)*(sin+1)/2 - 1, back in range
 #endif // NEWFLATTENINGCODE
       height = map(height, -32767,32767, -curAmplitude,curAmplitude); // map to max ampl limit
 #if DEBUG
