@@ -20,7 +20,7 @@ The gerstner library allows the definition of gerstner waveforms, and contains a
 compute the waveform values in the defined grid space, adding the new waveform to a defined grid. 
 
 ## Version
-  -- 2023-0120 Version 0.3.  Pre-release version.  Functional, but needs cleanup, documentation, and more testing.
+- 2023-0120 Version 0.3.  Pre-release version.  Functional, but needs cleanup, documentation, and more testing.
 
 ## Assumed Hardware
 The implementation assumes using an ESP32-class processor as a computing platform.  Is uses the FastLED library
