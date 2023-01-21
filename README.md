@@ -1,5 +1,5 @@
 # Gerstner
-** This is a pre-release version of a Gerstner wave simulation for LED grids **
+**This is a pre-release version of a Gerstner wave simulation for LED grids**
 
 This version is meant for initial experimentation.  It is not a releasable product.
 ## Overview
