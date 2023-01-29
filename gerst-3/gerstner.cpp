@@ -2,7 +2,7 @@
 // Testing full gerstner wave routines
 //
 
-#include <arduino.h>
+#include <Arduino.h>
 #include <FastLED.h>
 #include "gridlib.h"
 #include "gerstner.h"

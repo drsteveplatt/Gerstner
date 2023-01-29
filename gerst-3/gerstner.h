@@ -10,7 +10,7 @@
 #define __GERSTNER_H__
 
 // Grid of 16-but accumulators for RGB values
-class GridHeightx {
+class GridHeight {
   private:
     gridwcs_t* m_cells;
   public:
