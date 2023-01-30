@@ -14,6 +14,29 @@
 // A Grid has physical 0,0 in the lower left and logical (xmin ymin) in the lower left
 // Note on a "standard" LED grid, the power will come in at the lower left
 
+template<typename T> class GridData {
+  private:
+    T* m_data;
+    uint32_t m_nCols, m_nRows;
+  public:
+    GridData(): m_data(NULL) {  }
+    ~GridData() { if(m_data!=NULL) delete[] m_data; }
+    void init(uint32_t nCols, uint32_t nRows) {
+      if(m_data!=NULL) delete[] m_data; 
+      m_data = new T[nCols*nRows];
+      m_nRows = nRows;
+      m_nCols = nCols;
+    }
+    void set(int c,int r, T val) { m_data[r*m_nCols+c] = val; }
+    T& get(int c, int r) { return m_data[r*m_nCols+c]; }
+    void clear() {
+      memset(m_data, 0, m_nRows*m_nCols*sizeof(T));
+    }
+    uint32_t rows() { return m_nRows; }
+    uint32_t cols() { return m_nCols; }
+  
+};
+
 typedef int32_t gridwcs_t;
 
 // GridWorld contains all of the info needed for WCS(xy) to DCS(cr) to PixID mappings.

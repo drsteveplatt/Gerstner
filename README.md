@@ -20,6 +20,9 @@ The gerstner library allows the definition of gerstner waveforms, and contains a
 compute the waveform values in the defined grid space, adding the new waveform to a defined grid. 
 
 ## Version
+- 2023-0130 Version 0.4.  Incorporated pull from yliniemi(typo corrections).  Deleted class GridHeight (gerstner.h), 
+replaced with template<typename T> class GridData (gridlib.h) to separate grid-specific code from Gerstner-specific
+code.
 - 2023-0120 Version 0.3.  Pre-release version.  Functional, but needs cleanup, documentation, and more testing.
 
 ## Assumed Hardware
@@ -50,6 +53,8 @@ have the DIN lines of each pane connected to distinct pins on the host microcont
 
 The Grid library (gridlib.h) defines two classes used to manage a user pixel space on an array of LED panes.
 
+- GridData.  A templated class to store arbitrary data for an array of cells.
+
 - GridWorld.  A world coordinate system for use by anything operating on the LED grid.  It includes functions
   for specifying the WCS (user) space and to map from WCS to grid column/row coordinates.
   
@@ -59,11 +64,9 @@ The Grid library (gridlib.h) defines two classes used to manage a user pixel spa
 
 ## Gerstner library
 
-The Gerstner library (gerstner.cpp, gerstner.h) defines classes used to implement a 2D height surface and apply
+The Gerstner library (gerstner.cpp, gerstner.h) defines the class used to implement a 2D height surface and apply
 Gerstner waves to the surface.
 
-- GridHeight.  A 2D array of integer values used to store point-heights.
-  
 - GerstWave.  A single Gerstner wave.  It will have a duration (how long it lasts, in ms), a wavelength (distance
   between crests in WCS units), an angle (which way it faces and flows), and a sharpness (how narrow/pointy the peaks are).
   

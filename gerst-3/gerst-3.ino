@@ -33,7 +33,7 @@
 CRGB theLeds[GRIDPIXELCOLS*GRIDPIXELROWS];
 
 Grid<GRIDPANELCOLS, GRIDPANELROWS> grid(PANELPIXELCOLS, PANELPIXELROWS, theLeds);
-GridHeight accum;
+GridData<int32_t> accum;
 
 GridWorld gerstWorld(GRIDPIXELCOLS, GRIDPIXELROWS);
 GerstWave gerst;

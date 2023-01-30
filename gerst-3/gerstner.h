@@ -9,31 +9,6 @@
 #if !defined (__GERSTNER_H__)
 #define __GERSTNER_H__
 
-// Grid of 16-but accumulators for RGB values
-class GridHeight {
-  private:
-    gridwcs_t* m_cells;
-  public:
-    uint16_t m_nRows, m_nCols;
-  public:
-    GridHeight() { m_cells=NULL; }
-    ~GridHeight() { if(m_cells!=NULL) delete[] m_cells; }
-    void init(uint16_t nCols, uint16_t nRows) {
-      if(m_cells!=NULL) delete[] m_cells; 
-      m_cells = new gridwcs_t[nCols*nRows];
-      m_nRows = nRows;
-      m_nCols = nCols;
-    }
-    void set(int c,int r, gridwcs_t val) { m_cells[r*m_nCols+c] = val; }
-    gridwcs_t& get(int c, int r) { return m_cells[r*m_nCols+c]; }
-    void clear() {
-      memset(m_cells, 0, m_nRows*m_nCols*sizeof(gridwcs_t));
-    }
-    uint16_t rows() { return m_nRows; }
-    uint16_t cols() { return m_nCols; }
-
-};
-
 // Limits for appropriate GerstWave components
 //    Duration: -1: reset immediately; 0: never rest; >0: reset after <val> ms
 #define GW_MIN_DURATION   -1
@@ -67,7 +42,7 @@ class GerstWave {
     uint16_t m_nRows, m_nCols;
     // Note that m_grid and m_acc are both passed in via init()
     GridWorld* m_world;                           // used to get grid mappings
-    GridHeight* m_acc;
+    GridData<int32_t>* m_acc;
   public:
     GerstWave(): m_world(NULL), m_acc(NULL),
       m_nRows(0), m_nCols(0), m_startTime(0), m_duration(0),
@@ -79,7 +54,7 @@ class GerstWave {
       m_rngMinAngle(0), m_rngMaxAngle(65535)
       {  };
     ~GerstWave() { delete[] m_acc; };
-    void init(GridWorld* world, GridHeight* acc) {
+    void init(GridWorld* world, GridData<int32_t>* acc) {
       m_world = world;
       m_acc = acc;
       m_nRows = m_acc->rows();
