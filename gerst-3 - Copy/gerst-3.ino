@@ -108,7 +108,6 @@ void setup() {
   FastLED.addLeds<WS2811, 26, GRB>(&(theLeds[PANELPIXELS*2]), PANELPIXELS);       // UR
   FastLED.addLeds<WS2811, 27, GRB>(&(theLeds[PANELPIXELS*3]), PANELPIXELS);       // UL
 
-#if defined (USING_SERVOS)
   // set up servos
   ESP32PWM::allocateTimer(0);
   // might have to alloate timers 1 2 3 as well
@@ -122,7 +121,6 @@ void setup() {
     Serial << " ...up\n";
     delay(1000);
   }
-#endif
 
   // Initialize the world coord sys
   gerstWorld.setWcs(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
