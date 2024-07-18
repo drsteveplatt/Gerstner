@@ -1,18 +1,13 @@
 //
-// Gerstner full test 3.1
+// Gerstner v. 4.0
 // Simple waves on a grid
-// Servos to move around the sheets of LEDs
+// New version uses cLEDMatrix, cLEDMatrixWcs, and cLEDMatrixData libraries
 
 // Pin usage on ESP32: 
 //  14: LED grid LL
 //  25: LED grid LR
 //  26: LED grid UR
 //  27: LED grid UL
-//  16: Servo LL
-//  17: Servo LR
-//  18: Servo UR
-//  19: Servo UL
-
 
 // ESP32 FastLED fast sin/cos notes:
 // int16_t sin16/cos16(uint16:t theta)
@@ -21,43 +16,42 @@
 #define __MAIN__
 #include <Streaming.h>
 #include <FastLED.h>
-#include "gridlib.h"
-#include "gerstner.h"
 #include "gamma.h"
-#include "servocalc.h"
+
+#include <LEDMatrix.h>
+#include <LEDMatrixWcs.h>
+#include <LEDMatrixData.h>
+
+//#include "gridlib.h"
+#include "world.h"
+#include "gerstner.h"
 
 #define PERF true
 
-// size of each panel in pixels
-#define PANELPIXELCOLS 16
-#define PANELPIXELROWS 16
+// LED tile information
+// LED information
+#define COLOR_ORDER         GRB
+#define CHIPSET             WS2812B
 
-// grid dimensions in panels
-#define GRIDPANELCOLS 2
-#define GRIDPANELROWS 2
+// Hardware connection information
+#define DATA_PIN_LL           14
+#define DATA_PIN_LR           25
+#define DATA_PIN_UR           26
+#define DATA_PIN_UL           27
 
-// grid dimension in pixels
-#define GRIDPIXELCOLS (GRIDPANELCOLS*PANELPIXELCOLS)
-#define GRIDPIXELROWS (GRIDPANELROWS*PANELPIXELROWS)
-// other useful things
-#define PANELPIXELS (PANELPIXELCOLS*PANELPIXELROWS)
-
-CRGB theLeds[GRIDPIXELCOLS*GRIDPIXELROWS];
-
-Grid<GRIDPANELCOLS, GRIDPANELROWS> grid(PANELPIXELCOLS, PANELPIXELROWS, theLeds);
-GridData<int32_t> accum;
-
+#if false
 GridWorld gerstWorld(GRIDPIXELCOLS, GRIDPIXELROWS);
+#endif
 GerstWave gerst;
 GerstWave gerst2;
 GerstWave gerst3;
 GerstWave gerst4;
 
 // LL/UL XY define the display space
-#define WCS_LLX 0
-#define WCS_LLY 0
-#define WCS_URX (1000*GRIDPANELCOLS-1)
-#define WCS_URY (1000*GRIDPANELROWS-1)
+#define WCS_LLX (0)
+#define WCS_LLY (0)
+#define WCS_URX ((1000*MATRIX_TILE_COLS-1))
+#define WCS_URY ((1000*MATRIX_TILE_ROWS-1))
 
 // ZMIN/ZMAX define the range for chromatic interpolation
 #define WCS_ZMIN   -100
@@ -79,7 +73,8 @@ GerstWave gerst4;
 #define S_HIGH 220
 #define V_HIGH ((53*256)/100)
 
-#define PI 3.1415926
+#define PI (3.1415926f)
+
 int32_t angleMap(float angle) {
   // maps angle (0 2pi) to (0 65535)
   return (int32_t)((angle*65535)/(2*PI));
@@ -93,45 +88,39 @@ int32_t steepnessMap(float steepness) {
 void setup() {
   Serial.begin(115200);
   delay(1000); // allow Serial to come online
-  Serial << "Gerstner v 3 starting\n";
-  Serial << "PanelPixel CR: " << PANELPIXELCOLS << ' ' << PANELPIXELROWS
-    << " GridPixel CR: " << GRIDPIXELCOLS << ' ' << GRIDPIXELROWS
-    << " Panel size: " << PANELPIXELCOLS*PANELPIXELROWS
-    << " Grid size: " << GRIDPIXELCOLS*GRIDPIXELROWS
+  Serial << "Gerstner v 4 starting\n";
+  Serial << "PanelPixel CR: " << MATRIX_TILE_WIDTH << ' ' << MATRIX_TILE_HEIGHT
+    << " GridPixel CR: " << MATRIX_WIDTH << ' ' << MATRIX_SIZE
+    << " Panel size: " << MATRIX_TILE_WIDTH*MATRIX_TILE_HEIGHT
+    << " Grid size: " << MATRIX_SIZE
     << endl;
 
   //grid.dump();
 
   // set up the LED strips
-  FastLED.addLeds<WS2811, 14, GRB>(theLeds, PANELPIXELS);                                         // LL
-  FastLED.addLeds<WS2811, 25, GRB>(&(theLeds[PANELPIXELS]), PANELPIXELS);          // LR
-  FastLED.addLeds<WS2811, 26, GRB>(&(theLeds[PANELPIXELS*2]), PANELPIXELS);       // UR
-  FastLED.addLeds<WS2811, 27, GRB>(&(theLeds[PANELPIXELS*3]), PANELPIXELS);       // UL
-
-#if defined (USING_SERVOS)
-  // set up servos
-  ESP32PWM::allocateTimer(0);
-  // might have to alloate timers 1 2 3 as well
-  for(int i=0; i<NUMSERVOS; i++) {
-    theServos[i].attach(theServoInfo[i].m_pin);
-    Serial << "Servo " << i;
-    theServo.write(theServoInfo[i].val(0));
-    Serial << " down...";
-    delay(1000);
-    theServo.write(theServoInfo[i].val(90));
-    Serial << " ...up\n";
-    delay(1000);
-  }
+#if false
+  FastLED.addLeds<CHIPSET, DATA_PIN_LL, COLOR_ORDER>(&(theLeds[0]), MATRIX_SIZE);                         // LL
+  FastLED.addLeds<CHIPSET, DATA_PIN_LR, COLOR_ORDER>(&(theLeds[MATRIX_TILE_SIZE]), MATRIX_SIZE);         // LR
+  FastLED.addLeds<CHIPSET, DATA_PIN_UR, COLOR_ORDER>(&(theLeds[MATRIX_TILE_SIZE*2]), MATRIX_SIZE);       // UR
+  FastLED.addLeds<CHIPSET, DATA_PIN_UL, COLOR_ORDER>(&(theLeds[MATRIX_TILE_SIZE*3]), MATRIX_SIZE);       // UL
 #endif
+  FastLED.addLeds<CHIPSET, DATA_PIN_LL, COLOR_ORDER>(theLeds[0], 0,             theLeds.Size()/4).setCorrection(TypicalSMD5050);
+  FastLED.addLeds<CHIPSET, DATA_PIN_LR, COLOR_ORDER>(theLeds[0], theLeds.Size()/4, theLeds.Size()/4).setCorrection(TypicalSMD5050);
+  FastLED.addLeds<CHIPSET, DATA_PIN_UR, COLOR_ORDER>(theLeds[0], theLeds.Size()/2, theLeds.Size()/4).setCorrection(TypicalSMD5050);
+  FastLED.addLeds<CHIPSET, DATA_PIN_UL, COLOR_ORDER>(theLeds[0], (3*theLeds.Size())/4, theLeds.Size()/4).setCorrection(TypicalSMD5050);
 
   // Initialize the world coord sys
-  gerstWorld.setWcs(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
+//  gerstWorld.setWcs(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
+  theLeds.SetWcs(WCS_LLX, WCS_LLY, WCS_URX, WCS_URY);
   // Initialize the accumulator grid
+#if false
   accum.init(GRIDPIXELCOLS, GRIDPIXELROWS);
+#endif
+  theData.fill(0);
 
   // First test is a single wave
 //            duration maxAmpl wavelength speed angle
-  gerst.init(&gerstWorld, &accum);
+  gerst.init(/*&gerstWorld, &accum*/);
 //            duration maxAmpl wavelength speed angle
 //    gerst.start(5000, 900, 1500, 100, angleMap(PI/6));
 //NEW     duration wavelength steepness angle
@@ -148,7 +137,7 @@ void setup() {
     gerst.setRangeAngle(0, angleMap(PI/4));
 #endif
 
-  gerst2.init(&gerstWorld, &accum);
+  gerst2.init(/*&gerstWorld, &accum*/);
 //            duration maxAmpl wavelength speed angle
 //    gerst2.start(3000, 200, 250, 200, angleMap(PI/2));
 //NEW     duration wavelength steepness angle
@@ -159,7 +148,7 @@ void setup() {
 //    gerst2.setRangeSpeed(-200, 200);
     gerst2.setRangeAngle(0, angleMap(PI/2));
     
-  gerst3.init(&gerstWorld, &accum);
+  gerst3.init(/*&gerstWorld, &accum*/);
 //            duration maxAmpl wavelength speed angle
 //    gerst3.start(5000, 200, 150, -100, angleMap(PI/3));
 //NEW     duration wavelength steepness angle
@@ -170,7 +159,7 @@ void setup() {
 //  gerst3.setRangeSpeed(-200, 200);
     gerst3.setRangeAngle(0, angleMap(PI/2));
 
-  gerst4.init(&gerstWorld, &accum);
+  gerst4.init(/*&gerstWorld, &accum*/);
 //            duration maxAmpl wavelength speed angle
 //    gerst4.start(5000, 200, 150, -100, angleMap(2*PI/3));
 //NEW     duration wavelength steepness angle
@@ -183,7 +172,7 @@ void setup() {
 
 }
 
-#define DO_ONE_FRAME true
+#define DO_ONE_FRAME false
 #if DO_ONE_FRAME
 bool  frameDone = false;
 #endif
@@ -208,7 +197,10 @@ void loop() {
 #endif
 
   // calculate the new frame
+#if false
   accum.clear();
+#endif
+  theData.fill(0);
   gerst.calc();
   //gerst2.calc();
   //gerst3.calc();
@@ -219,12 +211,16 @@ void loop() {
   uint32_t sumMaxAmplitude;
   sumMaxAmplitude = gerst.getMaxAmplitude() + gerst2.getMaxAmplitude() + gerst3.getMaxAmplitude() + gerst4.getMaxAmplitude();
   // now do each pixel: map to the LED grid
-  for(int r=0; r<GRIDPIXELROWS; r++) {
-    for(int c=0; c<GRIDPIXELCOLS; c++) {
+  for(int r=0; r<theLeds.Height(); r++) {
+    for(int c=0; c<theLeds.Width(); c++) {
       CHSV hsv;
       CRGB rgb;
-      gridwcs_t height;
+//      gridwcs_t height;
+      AccumType_t height;
+#if false
       height = accum.get(c,r);
+#endif
+      height = theData(c,r);
 ///      if(r==0) { Serial << height << ' ';
 //      if(c==GRIDPIXELCOLS-1) Serial << endl;
  //     }
@@ -235,7 +231,10 @@ void loop() {
         hsv = CHSV(H_LOW,map(height, 0, sumMaxAmplitude, S_ZERO,S_HIGH), gamma8(map(height, 0, sumMaxAmplitude, V_ZERO,V_HIGH)));          
       }
       rgb = CRGB(hsv);
+#if false
       grid.setPixel(c,r, rgb);
+#endif
+      theLeds(c,r) = rgb;
     }
   }
 

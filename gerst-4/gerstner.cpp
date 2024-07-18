@@ -4,22 +4,28 @@
 
 #include <Arduino.h>
 #include <FastLED.h>
-#include "gridlib.h"
-#include "gerstner.h"
+#include <LEDMatrix.h>
+#include <LEDMatrixWcs.h>
+#include <LEDMatrixData.h>
+
 #include "gamma.h"
+//#include "gridlib.h"
+#include "world.h"
+
+#include "gerstner.h"
 
 #include <Streaming.h>
 
-static gridwcs_t trigMult(gridwcs_t val, int16_t cs) {
+static AccumType_t trigMult(AccumType_t val, int16_t cs) {
   // multiplies a wcs val by the result of a FastLED 16-bit cos/sin val
   // The cos/sin val is [-32767 32767].
   // The result is scaled down 16 bits
-  // Designed to work well for large gridwcs_t values -- spiits up the multiplication and
+  // Designed to work well for large AccumType_t values -- spiits up the multiplication and
   // scales components at the "right" time to avoid overflows while preserving precision
   bool resPos;
   int32_t tVal, tcs;
   int32_t valH, valL; // high, low parts
-  gridwcs_t res;
+  AccumType_t res;
   // sign-adjust; save sign of the result
   resPos = true;
   if(val>=0) { resPos = true;  tVal = val; }
@@ -35,14 +41,14 @@ static gridwcs_t trigMult(gridwcs_t val, int16_t cs) {
   return resPos ? res : -res;
 }
 
-#define DEBUG true
+#define DEBUG false
 
 void GerstWave::calc() {
   // add this wave to the accompanying m_acc accumulator with values based on the wave parameters and the current time.
   long unsigned int tNow;
   CHSV hsv;
   CRGB rgb;
-  gridwcs_t x, y, u, v, theta;
+  AccumType_t x, y, u, v, theta;
   long int u0, v0;
   int16_t cs, sn;
   int32_t height;
@@ -75,11 +81,24 @@ void GerstWave::calc() {
     else curAmplitude = m_maxAmplitude;
   }
 
-    for(int r=0; r<m_nRows; r++) {
-    for(int c=0; c<m_nCols; c++) {
+//  for(int r=0; r<m_nRows; r++) {
+//    for(int c=0; c<m_nCols; c++) {
+  for(int r2=0; r2<theLeds.Height(); r2++) {
+    for(int c=0; c<theLeds.Width(); c++) {
+      int r;
       CRGB val;
+      r = theLeds.Height()-r2-1;
       // map rc to XY
-      m_world->crToWcs(c,r,x,y);
+      { // take care of non-float issues with fixpoint
+        float flx, fly;
+        theLeds.DcsToWcs(c,r,flx,fly);
+#if DEBUG
+    if(r==0 && c<8) Serial << "r2->r: " << r2 << "->" << r << " (DcsToWcs:fl(xy): " << flx << ' ' << fly << ")";
+#endif
+        x = AccumType_t( flx );
+        y = AccumType_t( fly );
+      }
+      //theLeds.DcsToWcs(c,r,x,y);
       u = trigMult(x, cs) + trigMult(y, sn);
       v = trigMult(x, -sn) + trigMult(y, cs);
       // shift u by du/dt
@@ -89,14 +108,20 @@ void GerstWave::calc() {
       // calculate our new color
       //theta = u /*map(c, 0,GRIDCOLS, 0,65535)*2 + phaseShiftX*/;
       //while(theta>m_wavelength) theta -= m_wavelength;
-
-      theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
+      
+      //theta = (((u-m_world->m_wcsLLx)%m_wavelength)<<16) / m_wavelength;
+      { float llx, lly, urx, ury;
+        AccumType_t wllx;
+        theLeds.GetWcs(llx, lly, urx, ury);
+        wllx = int(llx* (1<<16));
+        theta = (((u-wllx)%m_wavelength)<<16) / m_wavelength ;
+      }
       height = sin16(theta);    // height is in range -32767..32767
 #if DEBUG
-if(r==0 && c<8) {
+      if(r==0 && c<8) {
         Serial << "calc: rc: " << r << ' ' << c << " xy: " << x << ' ' << y << " uv: " << u << ' ' << v 
           << " theta: " << theta << " curAmplitude: " << curAmplitude << " cos16(theta): " << height;
-}
+      }
 #endif
 #define NEWFLATTENINGCODE true
 #if NEWFLATTENINGCODE
@@ -114,19 +139,20 @@ if(r==0 && c<8) {
 #endif // NEWFLATTENINGCODE
       height = map(height, -32767,32767, -curAmplitude,curAmplitude); // map to max ampl limit
 #if DEBUG
-if(r==0 && c<8) {
-  Serial << " final height: " << height << endl;
-}
+      if(r==0 && c<8) {
+        Serial << " final height: " << height << endl;
+      }
 #endif
-      m_acc->get(c,r) += height;
-    }
-  }
+      //m_acc->get(c,r) += height;
+      theData(c,r) += height;
+    } // for c
+  } // for r
 
 }
 
 void GerstWave::dump(char* label/*=NULL*/) {
   Serial << "-->GerstWave::dump";  if(label) Serial << '(' << label << ")\n";
-  Serial << "\tm_nCols: " << m_nCols << " m_nRows: " << m_nRows << endl;
+  Serial << "\twidth: " << theLeds.Width() << " height: " << theLeds.Height() << endl;
   Serial << "\tm_startTime: " << m_startTime << endl;
   Serial << "\tm_duration: " << m_duration << " rng: [" << m_rngMinDuration << ' ' << m_rngMaxDuration << "]\n";
   Serial << "\tm_wavelength: " << m_wavelength << " rng: [" << m_rngMinWavelength << ' ' << m_rngMaxWavelength << "]\n";

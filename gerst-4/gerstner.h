@@ -21,7 +21,7 @@ class GerstWave {
     long unsigned int m_startTime;   // ms
     
     // specified values (parameters)
-    long unsigned int m_duration;     // ms; wave ends at startTime+duration
+    long unsigned int m_duration;     // ms; wave ends at startTIme+duration
       uint32_t m_rngMinDuration, m_rngMaxDuration;
 //      int32_t m_rngMinAmplitude, m_rngMaxAmplitude;
     uint32_t m_wavelength;               // in wcs units
@@ -38,14 +38,19 @@ class GerstWave {
     int32_t m_speed;
     uint32_t m_c, m_k;
     
+#if false
     // These will be based on m_grid.  m_grid and m_acc are assumed to be the same size.
     uint16_t m_nRows, m_nCols;
     // Note that m_grid and m_acc are both passed in via init()
+    // Ver 4.0 -- we now use globals theLeds and theData
     GridWorld* m_world;                           // used to get grid mappings
     GridData<int32_t>* m_acc;
+#endif
   public:
-    GerstWave(): m_world(NULL), m_acc(NULL),
-      m_nRows(0), m_nCols(0), m_startTime(0), m_duration(0),
+    GerstWave(): 
+      // m_world(NULL), m_acc(NULL),
+      //m_nRows(0), m_nCols(0), 
+      m_startTime(0), m_duration(0),
       m_rngMinDuration(1000), m_rngMaxDuration(20000),
       //m_rngMinAmplitude(50), m_rngMaxAmplitude(10000),
       m_rngMinWavelength(32), m_rngMaxWavelength(1000),
@@ -53,12 +58,13 @@ class GerstWave {
       m_rngMinSteepness(65535/3), m_rngMaxSteepness((2*65535)/3),
       m_rngMinAngle(0), m_rngMaxAngle(65535)
       {  };
-    ~GerstWave() { delete[] m_acc; };
-    void init(GridWorld* world, GridData<int32_t>* acc) {
-      m_world = world;
+    ~GerstWave() { /*delete[] m_acc;*/ };
+    void init(/*GridWorld* world, GridData<int32_t>* acc*/) {
+      /*m_world = world;
       m_acc = acc;
       m_nRows = m_acc->rows();
       m_nCols = m_acc->cols();
+      */
     }
     void setRangeDuration(uint32_t min, uint32_t max) { m_rngMinDuration=min; m_rngMaxDuration=max; }
     //void setRangeAmplitude(int32_t min, int32_t max) { m_rngMinAmplitude=min; m_rngMaxAmplitude=max; }
@@ -100,7 +106,8 @@ class GerstWave {
       //  Pi in fixpoint is 3.1415926*65536 = 205887.4
       //  so this also factors out the need to renormalize our fixpoint number
       m_maxAmplitude = ((m_wavelength*m_steepness)>>16)/2; // trial and error
-      Serial << "start: m_wavelength: " << m_wavelength << " m_steepness: " << m_steepness << " m_maxAmplitude: " << m_maxAmplitude << endl;
+      Serial.printf("Start: m_wavelength: %d, m_steepness %d, m_maxAmplitude: %d\n", m_wavelength, m_steepness, m_maxAmplitude);
+      //Serial << "start: m_wavelength: " << m_wavelength << " m_steepness: " << m_steepness << " m_maxAmplitude: " << m_maxAmplitude << endl;
 
       // m_speed is 9.8/k.  9.8 is converted to fixed_16 value
       //m_speed = 642253/m_k;
